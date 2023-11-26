@@ -26,5 +26,6 @@ configureSwap() { # PATH VAL
 containerNameFromPath() { # PATH
 	 egrep -o "crio-[^.]*" | cut -d "-" -f2 ; }
 
+# FIXME we shoud set noswap for all cgroups, not just leaves, just to be sure
 cgroups_without_pod | while read FN ; do configureNoSwap $FN ; done
 cgroups_with_pod | while read FN ; do configureSwap $FN 100M ; done
