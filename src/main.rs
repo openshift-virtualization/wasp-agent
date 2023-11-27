@@ -1,8 +1,10 @@
 use lib::*;
 
 fn main() {
+    env_logger::init();
+
     println!("Hello, world!");
-    for g in non_kube_cgroups().iter() {
-        println!("{}", g);
-    }
+    let fs = FS::new();
+    let mut wasp = WaspAgent::new(fs);
+    wasp.configure_node_swap();
 }

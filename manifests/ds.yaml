@@ -1,0 +1,41 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: wasp-agent
+  namespace: wasp
+  labels:
+    app: wasp
+    tier: node
+spec:
+  selector:
+    matchLabels:
+      name: wasp
+  template:
+    metadata:
+      annotations:
+        description: >-
+          Configures swap for workloads
+      labels:
+          name: wasp
+    spec:
+      restartPolicy: Always
+      serviceAccountName: wasp
+      hostPID: true
+      terminationGracePeriodSeconds: 30
+      securityContext: {}
+      containers:
+        - name: wasp-agent
+          image: >-
+            quay.io/fdeutsch/wasp-operator-prototype
+          resources:
+            requests:
+              cpu: 100m
+              memory: 50Mi
+          imagePullPolicy: Always
+      priorityClassName: system-node-critical
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 10%
+      maxSurge: 0
+status: {}
