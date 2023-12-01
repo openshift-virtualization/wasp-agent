@@ -12,15 +12,14 @@ cat $FSROOT/proc/*/cgroup \
 	| while read FN ; do [[ -f "$FN/memory.swap.max" ]] && echo $FN ; done
 }
 
-cgroups_with_pod() {
-	_allproccgroups | grep kubepods.slice | grep -i burstable | grep -v conmon
-}
-
 cgroups_without_pod() {
 	# FIXME conmon
 	_allproccgroups | grep -v kubepods.slice
 }
 
+cgroups_with_pod() {
+	_allproccgroups | grep kubepods.slice | grep -i burstable | grep -v conmon
+}
 
 configureNoSwap() { # FN
 	_configureSwap FN=$1 SWAP_QUANTITY=0 ;
@@ -119,8 +118,10 @@ do
 sleep 3
 
 # FIXME we shoud set noswap for all cgroups, not just leaves, just to be sure
+echo "Setting groundtruth"
 cgroups_without_pod | while read FN ; do configureNoSwap $FN ; done
 
+echo "Poking holes"
 cgroups_with_pod | while read FN ; do
 	echo "Processing $FN" >&2
 	echo "  $(getPodNamespaceNameFromCgroupPath $FN)"
