@@ -20,18 +20,42 @@ spec:
     spec:
       restartPolicy: Always
       serviceAccountName: wasp
+      serviceAccount: wasp
       hostPID: true
+      hostUsers: true
       terminationGracePeriodSeconds: 30
       securityContext: {}
       containers:
         - name: wasp-agent
           image: >-
-            quay.io/fdeutsch/wasp-operator-prototype
+            quay.io/fdeutsch/wasp-operator-prototype:latest
+          imagePullPolicy: Always
+          env:
+          - name: "FSROOT"
+            value: "/host"
+          - name: "LOOP"
+            value: "true"
+          - name: "DEBUG"
+            value: ""
+          - name: "DRY"
+            value: ""
+          - name: "NODE_NAME"
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
           resources:
             requests:
               cpu: 100m
-              memory: 50Mi
-          imagePullPolicy: Always
+              memory: 50M
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - name: host
+            mountPath: "/host"
+      volumes:
+      - name: host
+        hostPath:
+          path: "/"
       priorityClassName: system-node-critical
   updateStrategy:
     type: RollingUpdate

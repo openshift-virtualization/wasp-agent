@@ -8,15 +8,24 @@ push() {
 	podman -r push $IMG_REPO
 }
 
+_oc() { echo "$ oc $@" ; oc $@ ; }
+qoc() { oc $@ > /dev/null 2>&1; }
+
 deploy() {
-	oc admin oc adm new-project wasp
-	kubectl apply -f manifests/sa.yaml
-	kubectl apply -f manifests/ds.yaml
-	oc adm policy add-scc-to-user privileged -z wasp
+	local NS=wasp
+	qoc get project wasp || _oc adm new-project $NS
+	_oc project $NS
+	qoc get sa -n $NS wasp || {
+		_oc create sa -n $NS wasp
+		#oc adm policy add-role-to-user -n $NS cluster-admin -z wasp
+		_oc adm policy add-cluster-role-to-user cluster-admin -z wasp
+		_oc adm policy add-scc-to-user -n $NS privileged -z wasp
+	}
+	_oc apply -f manifests/ds.yaml
 }
 
 destroy() {
-	kubectl delete -f manifests/ds.yaml
+	oc delete -f manifests/ds.yaml
 }
 
 $@
