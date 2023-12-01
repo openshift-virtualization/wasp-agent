@@ -43,6 +43,7 @@ _configureSwap() { # FN SWAP_REQUEST MEMORY_REQUESTS
 	eval $@
 
 	[[ -z "$SWAP_REQUEST" ]] && { [[ -n "${DEBUG}" ]] && echo "No swap quantity" ; return ; }
+	# NOTE we add the M suffix, as swap can only be allocated on a M granularity (or page?) … at least not on a byte basis
 	_cg_set "${SWAP_REQUEST}M" "$FN/memory.swap.max" ;
 	[[ ! -z "$MEMORY_REQUEST" ]] && {
 		# FIXME naively dropping kube quantity into cgroups memory.max, often works …
