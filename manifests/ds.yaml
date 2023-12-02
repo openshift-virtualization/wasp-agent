@@ -33,6 +33,12 @@ spec:
           env:
           - name: "FSROOT"
             value: "/host"
+          - name: "STRATEGY"
+            value: "ortho"
+          - name: "SWAPPINESS"
+            value: ""
+          - name: "SWAP_SIZE_MB"
+            value: "100"
           - name: "LOOP"
             value: "true"
           - name: "DEBUG"

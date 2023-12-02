@@ -1,8 +1,15 @@
 
+# Expected to be set by DS
 FSROOT=${FSROOT:-/host}
-ERESNAME=node.kubevirt.io/swap
 DEBUG=${DEBUG}
 DRY=${DRY}
+
+STRATEGY=${STRATEGY:-ortho}
+SWAPPINESS=${SWAPPINESS:-60}
+SWAP_SIZE_MB=${SWAP_SIZE_MB:-100}
+
+
+ERESNAME=node.kubevirt.io/swap
 
 _allproccgroups() {
 cat $FSROOT/proc/*/cgroup \
@@ -43,12 +50,35 @@ _configureSwap() { # FN SWAP_REQUEST MEMORY_REQUESTS
 	eval $@
 
 	[[ -z "$SWAP_REQUEST" ]] && { [[ -n "${DEBUG}" ]] && echo "No swap quantity" ; return ; }
-	# NOTE we add the M suffix, as swap can only be allocated on a M granularity (or page?) … at least not on a byte basis
-	_cg_set "${SWAP_REQUEST}M" "$FN/memory.swap.max" ;
-	[[ ! -z "$MEMORY_REQUEST" ]] && {
-		# FIXME naively dropping kube quantity into cgroups memory.max, often works …
-		_cg_set "$MEMORY_REQUEST" "$FN/memory.max" ;
-	}
+	local MEM_MAX SWAP_MAX
+	case ${STRATEGY} in
+		"force-hard")
+		# A workload is force to swap beyond requests
+			MEM_MAX=$MEMORY_REQUEST
+			SWAP_MAX=$SWAP_REQUEST
+		;;
+		# the following two likely require node swapp threshold configuration
+		"ortho")
+		# A workload gets additional swap, which it can use under node pressure
+			#MEM_MAX=max  # no need to touch actually
+			SWAP_MAX=$SWAP_REQUEST
+		;;
+		"allow-spike")
+		# A workload can spike into a node's memory, will be squeezed into swap
+			MEM_HIGH=$MEMORY_REQUEST
+			#MEM_MAX=max  # no need to touch actually
+			SWAP_MAX=$SWAP_REQUEST
+		;;
+	esac
+
+	# NOTE we add the M suffix, as swap can only be allocated on a M granularity (or page?) ... at least not on a byte basis
+	_cg_set "${SWAP_MAX}M" "$FN/memory.swap.max" ;
+
+	# FIXME naively dropping kube quantity into cgroups memory.max, often works ...
+	[[ ! -z "$MEM_MAX" ]] && { _cg_set "$MEM_MAX" "$FN/memory.max" ; }
+	[[ ! -z "$MEM_HIGH" ]] && { _cg_set "$MEM_HIG" "$FN/memory.high" ; }
+
+	# https://facebookmicrosites.github.io/cgroup2/docs/memory-controller.html
 }
 
 containerNameFromPath() { # PATH
@@ -87,11 +117,13 @@ addSwapToThisNode() {
 	(set -x
 	grep wasp.file /proc/swaps || {
 		local SWAPFILE=$FSROOT/var/tmp/wasp.file
-		dd if=/dev/zero of=$SWAPFILE bs=1M count=100
+		dd if=/dev/zero of=$SWAPFILE bs=1M count=$SWAP_SIZE_MB
 		chmod 0600 $SWAPFILE
 		mkswap $SWAPFILE
 		swapon $SWAPFILE
 	}
+
+	[[ -n "$SWAPPINESS" ]] && { _cg_set "$SWAPPINESS" "$FSROOT/proc/sys/vm/swappiness"; }
 
 	local SWAP_KBYTES=$(grep wasp.file /proc/swaps | awk '{print $3;}')
 	local SWAP_MBYTES=$(( $SWAP_KBYTES / 1024 ))
@@ -99,7 +131,12 @@ addSwapToThisNode() {
 	kubectl proxy &
 	local OCPID=$!
 	sleep 1
-	curl --header "Content-Type: application/json-patch+json" \
+	curl -s --header "Content-Type: application/json-patch+json" \
+	  --request PATCH \
+	  --data "[{\"op\": \"remove\", \"path\": \"/status/capacity/${ERESNAME/\//~1}\"}]" \
+	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
+
+	curl -s --header "Content-Type: application/json-patch+json" \
 	  --request PATCH \
 	  --data "[{\"op\": \"add\", \"path\": \"/status/capacity/${ERESNAME/\//~1}\", \"value\": \"$SWAP_MBYTES\"}]" \
 	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
