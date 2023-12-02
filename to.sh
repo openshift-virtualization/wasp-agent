@@ -21,11 +21,11 @@ deploy() {
 		_oc adm policy add-cluster-role-to-user cluster-admin -z wasp
 		_oc adm policy add-scc-to-user -n $NS privileged -z wasp
 	}
-	_oc apply -f manifests/ds.yaml
+	_oc apply -f manifests/ds.yaml -f manifests/fedora.yaml
 }
 
 destroy() {
-	oc delete -f manifests/ds.yaml
+	oc delete -f manifests/ds.yaml -f manifests/fedora.yaml
 }
 
 $@

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: fedora
+  name: fedora
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fedora
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: fedora
+    spec:
+      containers:
+      - command:
+        - sleep
+        - "6000"
+        image: >-
+            quay.io/fdeutsch/wasp-operator-prototype:latest
+        name: fedora
+        resources:
+          requests:
+            memory: 40M
+          limits:
+            node.kubevirt.io/swap: 80
+status: {}
