@@ -36,7 +36,7 @@ spec:
           - name: "STRATEGY"
             value: "ortho-only"
           - name: "SWAPPINESS"
-            value: ""
+            value: "100"
           - name: "SWAP_SIZE_MB"
             value: "4000"
           - name: "LOOP"

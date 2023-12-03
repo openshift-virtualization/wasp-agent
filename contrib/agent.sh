@@ -1,4 +1,5 @@
-
+#!/usr/bin/bash
+#
 # Expected to be set by DS
 FSROOT=${FSROOT:-/host}
 DEBUG=${DEBUG}
@@ -16,7 +17,8 @@ cat $FSROOT/proc/*/cgroup \
 	| grep "\.slice" \
 	| cut -d ":" -f3 \
 	| sed "s#^#$FSROOT/sys/fs/cgroup/#" \
-	| while read FN ; do [[ -f "$FN/memory.swap.max" ]] && echo $FN ; done
+	| while read FN ; do [[ -f "$FN/memory.swap.max" ]] && echo $FN ; done \
+	| sort -u
 }
 
 cgroups_without_pod() {
@@ -28,14 +30,6 @@ cgroups_with_pod() {
 	_allproccgroups | grep kubepods.slice | grep -i burstable | grep -v conmon
 }
 
-# More aggressive than the ones above
-all_leaf_cgroups() {
-	# find all cgroups which have procs associated
-	find $FSROOT/sys/fs/cgroup/*.*/ -name memory.swap.max \
-		| while read FN; do [[ -n "$(cat $(dirname $FN)/cgroup.procs)" ]] && echo $FN ; done
-}
-
-
 configureNoSwap() { # FN
 	_configureSwap FN=$1 SWAP_QUANTITY=0 ;
 }
@@ -43,18 +37,20 @@ configureNoSwap() { # FN
 _cg_set() {
 	local VAL=$1
 	local FN=$2
-	echo "$ echo $VAL > $FN"
 	if [[ -n "${DRY}" ]];
 	then
-		echo "DRY!"
+		echo "CFGSET DRY!"
 	else
-		( set -x ; echo "$VAL" > "$FN" ; )
+		echo "CFGSET"
+		echo "$VAL" > "$FN"
 	fi
+		echo "$ echo $VAL > $FN"
 }
 
 _configureSwap() { # FN SWAP_REQUEST MEMORY_REQUESTS
 	# this function expects VARs to be passed, i.e.
 	# FN=/foo SWAP_REQUEST=234 MEMORY_REQUESTS=4M
+	[[ -n "$DEBUG" ]] && echo "configureSwap $@"
 	eval $@
 
 	[[ -z "$SWAP_REQUEST" ]] && { [[ -n "${DEBUG}" ]] && echo "No swap quantity" ; return ; }
@@ -66,7 +62,7 @@ _configureSwap() { # FN SWAP_REQUEST MEMORY_REQUESTS
 			SWAP_MAX=$SWAP_REQUEST
 		;;
 		# the following two likely require node swapp threshold configuration
-		"ortho|ortho-only")
+		"ortho" | "ortho-only")
 		# A workload gets additional swap, which it can use under node pressure
 			#MEM_MAX=max  # no need to touch actually
 			SWAP_MAX=$SWAP_REQUEST
@@ -123,8 +119,20 @@ getPodNamespaceNameFromCgroupPath() {
 }
 
 addSwapToThisNode() {
+	kubectl proxy &
+	local OCPID=$!
+	sleep 1
+
+	# Cleanup any potential resource until we've prepped the system
+	curl -s --header "Content-Type: application/json-patch+json" \
+	  --request PATCH \
+	  --data "[{\"op\": \"remove\", \"path\": \"/status/capacity/${ERESNAME/\//~1}\"}]" \
+	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
+
 	(set -x
-	swapoff -v $FSROOT/var/tmp/wasp.file || :
+	# For debug
+	grep wasp.file /proc/swaps && swapoff -v $FSROOT/var/tmp/wasp.file
+
 	grep wasp.file /proc/swaps || {
 		local SWAPFILE=$FSROOT/var/tmp/wasp.file
 		dd if=/dev/zero of=$SWAPFILE bs=1M count=$SWAP_SIZE_MB
@@ -138,14 +146,7 @@ addSwapToThisNode() {
 	local SWAP_KBYTES=$(grep wasp.file /proc/swaps | awk '{print $3;}')
 	local SWAP_MBYTES=$(( $SWAP_KBYTES / 1024 ))
 
-	kubectl proxy &
-	local OCPID=$!
-	sleep 1
-	curl -s --header "Content-Type: application/json-patch+json" \
-	  --request PATCH \
-	  --data "[{\"op\": \"remove\", \"path\": \"/status/capacity/${ERESNAME/\//~1}\"}]" \
-	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
-
+	# Announce resource
 	curl -s --header "Content-Type: application/json-patch+json" \
 	  --request PATCH \
 	  --data "[{\"op\": \"add\", \"path\": \"/status/capacity/${ERESNAME/\//~1}\", \"value\": \"$SWAP_MBYTES\"}]" \
@@ -161,11 +162,6 @@ set_groundtruth() {
 	echo "Setting groundtruth"
 	all_no_swap() { while read FN ; do configureNoSwap $FN ; done ; }
 	case "$STRATEGY" in
-# TOO AGRESSIVE
-#		"ortho")
-#			# We assume that burstable will be set to max again
-#			all_leaf_cgroups | all_no_swap
-#			;;
 		"ortho-only")
 			echo "This strategy does not change any host settings, only wrkld"
 			;;
@@ -175,25 +171,36 @@ set_groundtruth() {
 	esac
 }
 
+poke_holes() {
+	echo "Poking holes"
+	cgroups_with_pod | while read FN ; do
+		[[ -n "$DEBUG" ]] && {
+			echo "Processing $FN" >&2
+			echo "  $(getPodNamespaceNameFromCgroupPath $FN)"
+		}
+		_configureSwap FN=$FN $(getSwapValueFromAPIForPod $(getPodNamespaceNameFromCgroupPath $FN))
+		done
+}
 
-# FIXME hardlinks are broken if FSROOT is used, but we need it
-[[ ! -d /run/containers ]] && ln -s $FSROOT/run/containers /run/containers
+main() {
+	# FIXME hardlinks are broken if FSROOT is used, but we need it
+	[[ ! -d /run/containers ]] && ln -s $FSROOT/run/containers /run/containers
 
-addSwapToThisNode
+	addSwapToThisNode
 
-while true;
-do
+	while true;
+	do
+		sleep 3
 
-sleep 3
+		set_groundtruth
+		poke_holes
 
-set_groundtruth
+		${LOOP:-false} || break;
+	done
+}
 
-echo "Poking holes"
-cgroups_with_pod | while read FN ; do
-	echo "Processing $FN" >&2
-	echo "  $(getPodNamespaceNameFromCgroupPath $FN)"
-	_configureSwap FN=$FN $(getSwapValueFromAPIForPod $(getPodNamespaceNameFromCgroupPath $FN))
-done
+swaptop() {
+	while sleep 0.3 ; do D=$(free -m ; find /sys/fs/cgroup -name memory.swap.current | while read FN ; do [[ -f "$FN" && "$(cat $FN)" -gt 0 ]] && { echo -n "$FN " ; cat $FN ; } ; done) ; clear ; echo "$D" ; done
+}
 
-${LOOP:-false} || break;
-done
+${@:-main}
