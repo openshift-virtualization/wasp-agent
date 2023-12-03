@@ -1,11 +1,12 @@
 use log::{debug,trace};
 
-use std::fs;
-use std::vec::Vec;
-use std::collections::{HashMap,BTreeSet};
-use std::path::PathBuf;
+use std;
+use std::collections::{HashMap};
+use std::path::{Path, PathBuf};
+use wax::Glob;
 
-use wax::{Glob,Pattern};
+use k8s_openapi::api::core::v1::Pod;
+use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
 
 // For easier mocking
 pub struct FS {
@@ -23,31 +24,14 @@ impl FS {
             mock: Some(HashMap::new())
         }
     }
-    fn find(&self, path: &str, pattern: &str) -> Vec<String> {
-        debug!("In {} find {}", path, pattern);
-        if let Some(vals) = &self.mock {
-            vals.keys()
-                .filter(|e| e.starts_with(path))
-                .filter(|e| Glob::new(pattern).unwrap().is_match(e.as_str()))
-                .map(String::from)
-                .collect()
-        } else {
-            let glob = Glob::new(pattern).unwrap();
-            glob.walk(path)
-                .into_iter()
-                .filter(|e| e.as_ref().ok().is_some())
-                .map(|e| String::from(e.unwrap().path().to_str().unwrap()))
-                .collect()
-        }
-    }
-    fn read_to_string(&self, path: &str) -> String {
+    /*fn read_to_string(&self, path: &str) -> String {
         debug!("Read {}", path);
         if let Some(vals) = &self.mock {
             vals[path].clone()
         } else {
-            fs::read_to_string(path).unwrap()
+            std::fs::read_to_string(path).unwrap()
         }
-    }
+    }*/
     fn exists(&self, path: &str) -> bool {
         if let Some(vals) = &self.mock {
             vals.contains_key(path)
@@ -62,104 +46,129 @@ impl FS {
             let _ = std::fs::write(path, val);
         }
     }
-    fn cg_full_path(&self, cg: &str, key: &str) -> String {
-        let mut pb = PathBuf::from("/sys/fs/cgroup");
-        pb.push(cg.strip_prefix("/").unwrap_or(cg));
-        pb.push(key.strip_prefix("/").unwrap_or(key));
-        let p = pb.into_os_string().into_string().unwrap();
-        debug!("pb {}", p);
-        p
-    }
-    fn cg_has_interface(&self, cg: &str, key: &str) -> bool {
-        let p = self.cg_full_path(&cg, key);
-        debug!("Has interface {}?", p);
-        self.exists(&p)
-    }
-    fn cg_set(&mut self, cg: &str, key: &str, val: &str) {
-        let full_path = self.cg_full_path(cg, key);
-        println!("Configuring '{}' to {}", full_path, val);
-        self.write_string(&full_path, val);
+
+    fn cg(&mut self, cg_path: &PathBuf) -> Cgroup {
+        Cgroup::open(self, cg_path)
     }
 
-    fn cri_get_container_id_from_cgroup(cg: &str) -> String {
-        String::from("")
+    fn cg_find(&mut self, cg_pat: &str) -> Option<Cgroup> {
+        Cgroup::find(self, cg_pat)
     }
 }
 
+static CGROUP_BASE: &str = "/sys/fs/cgroup";
+struct Cgroup<'a> {
+    fs: &'a mut FS,
+    path: PathBuf
+}
+impl<'a> Cgroup<'a> {
+    fn open(fs: &'a mut FS, cg_path: &Path) -> Cgroup<'a> {
+        let mut pb = PathBuf::from(CGROUP_BASE);
+        pb.push(cg_path);
+        Cgroup {
+            fs: fs,
+            path: pb
+        }
+    }
+    fn find(fs: &'a mut FS, pattern: &str) -> Option<Cgroup<'a>> {
+        let glob = Glob::new(pattern).unwrap();
+        let mut cg = None;
+        for entry in glob.walk(CGROUP_BASE) {
+            let pb = entry.unwrap();
+            cg = Some(Cgroup {
+                fs: fs,
+                path: pb.into_path()
+            });
+            break;
+        }
+        cg
+    }
+    fn full_path(&self, interface: &str) -> String {
+        let mut pb = self.path.clone();
+        pb.push(interface.strip_prefix("/").unwrap_or(interface));
+        let p = pb.into_os_string().into_string().unwrap();
+        p
+    }
+    fn interface<'b>(&'b mut self, interface_name: &'b str) -> Option<CgInterface> where 'b: 'a {
+        let p = self.full_path(interface_name);
+        trace!("Interface {}?", p);
+        if self.fs.exists(&p) {
+            Some(CgInterface::open(self, interface_name))
+        } else {
+            None
+        }
+    }
+}
+
+struct CgInterface<'a> {
+    cg: &'a mut Cgroup<'a>,
+    interface_name: &'a str
+}
+impl<'a> CgInterface<'a> {
+    fn open(cg: &'a mut Cgroup<'a>, interface_name: &'a str) -> CgInterface<'a> {
+        CgInterface {
+            cg,
+            interface_name
+        }
+    }
+    fn set(&mut self, val: &str) {
+        let full_path = self.cg.full_path(self.interface_name);
+        println!("Configuring '{}' to {}", full_path, val);
+        self.cg.fs.write_string(&full_path, val);
+    }
+}
+
+type SwapQuantity = String;
+type ContainerId = String;
+const SWAP_RESOURCE_NAME: &str = "node.kubevirt.io/swap";
 
 pub struct WaspAgent {
-    fs: FS,
-    crio: CrioHacker
+    fs: FS
 }
 impl WaspAgent {
     pub fn new(fs: FS) -> WaspAgent {
         WaspAgent {
-            fs: fs,
-            crio: CrioHacker::new()
+            fs: fs
         }
     }
 
-    fn cgroups_of_procs(&self) -> Vec<String> {
-        debug!("Finding cgroups of proccesses");
-        let mut cgroups = Vec::new();
-        for entry in self.fs.find("/proc", "**/cgroup") {
-            debug!("Has cgroup? {}", entry);
-            //if entry.contains(".slice") { continue ; }
-            let raw = self.fs.read_to_string(&entry);
-            debug!("Got: {}", raw);
-            let cg = String::from(raw[3..].trim());
-            if self.fs.cg_has_interface(&cg, "memory.swap.max") {
-                debug!("Has swap, consider it");
-                cgroups.push(cg);
-            } else {
-                debug!("Has no swap, drop it");
-            }
-        }
-        BTreeSet::from_iter(cgroups.into_iter())
-            .into_iter()
-            .collect()
+    pub fn handle_pod(&mut self, pod: &Pod) {
+        self.set_container_swap_according_to_pod_swap_resource(pod);
     }
 
-    pub fn kube_container_cgroups(&self) -> Vec<String> {
-        debug!("Finding kube container cgroups");
-        self.cgroups_of_procs()
-            .into_iter()
-            .map(|pth| {trace!("F {}", pth); pth })
-            .filter(|pth| pth.contains("kubepods.slice"))
-            .filter(|pth| !pth.contains("conmon"))
-            .collect()
+    fn set_container_swap_according_to_pod_swap_resource(&mut self, pod: &Pod) {
+        let (cid, swap_quantity) = self.container_id_and_swap_from_pod(pod);
+
+        let pattern = format!("kubepods.slice/*.slice/*.slice/crio-{}.scope", cid);
+        let mut cg = self.fs.cg_find(&pattern).unwrap();
+
+        let swap_request_normalized = swap_quantity.0;  //FIXME convert kube to cgroup
+
+        cg.interface("memory.swap.max")
+            .unwrap()
+            .set(&swap_request_normalized);
     }
 
-    fn non_kube_container_cgroups(&self) -> Vec<String> {
-        debug!("Finding non-kube cgroups");
-        let all_cgroups = self.cgroups_of_procs().into_iter();
-        let kube_cgroups = self.kube_container_cgroups().into_iter();
-
-        BTreeSet::from_iter(all_cgroups)
-            .difference(&BTreeSet::from_iter(kube_cgroups))
-            .map(String::from)
-            .collect()
-    }
-
-    fn configure_container_swap(&mut self, cg: &str) {
-        let val = "0"; //self.get_swap_resource_from_container_cgroup(cg);
-        self.fs.cg_set(cg, "memory.swap.max", val);
-    }
-
-    fn get_swap_resource_from_container_cgroup(&self, path: &str) -> &str {
-        let _res_name = "node.kubevirt.io/swap";
-        let _ = path;
-        "0"
-    }
-
-    pub fn configure_node_swap(&mut self) {
-        debug!("hi");
-        self.non_kube_container_cgroups()
+    /// Loop containers of pod to find the container with swap resource
+    fn container_id_and_swap_from_pod(&self, pod: &Pod) -> (ContainerId, Quantity) {
+        let _p = pod;
+        let (ref c_name, Some(swap_quantity)) = pod.spec.as_ref().unwrap().containers
             .iter()
-            .for_each(|cg| self.fs.cg_set(cg, "memory.swap.max", "0"));
-        self.kube_container_cgroups()
+            .filter(|c| c.resources.is_some())
+            .filter(|c| c.resources.as_ref().unwrap().limits.is_some())
+            .filter(|c| c.resources.as_ref().unwrap().limits.as_ref().unwrap().contains_key("memory"))
+            .filter(|c| c.resources.as_ref().unwrap().limits.as_ref().unwrap().contains_key(SWAP_RESOURCE_NAME))
+            .map(|c| (c.name.clone(),
+                      c.resources.as_ref().unwrap().limits.as_ref().unwrap().get(SWAP_RESOURCE_NAME)))
+            .collect::<Vec<_>>()[0] else { todo!() };
+
+        let c_id: String = pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
             .iter()
-            .for_each(|cg| self.configure_container_swap(cg));
+            .filter(|c| &c.name == c_name)
+            .map(|c| c.container_id.as_ref().unwrap().clone())
+            .collect::<Vec<_>>()[0].clone();
+
+        (c_id, swap_quantity.clone())
     }
 }
 
