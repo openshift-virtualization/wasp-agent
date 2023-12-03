@@ -17,6 +17,7 @@ spec:
       labels:
         app: fedora
     spec:
+      terminationGracePeriodSeconds: 0
       containers:
       - command:
         - sleep
@@ -26,7 +27,8 @@ spec:
         name: fedora
         resources:
           requests:
-            memory: 40M
+            cpu: "2.0"
           limits:
-            node.kubevirt.io/swap: 80
+            memory: 1G
+            node.kubevirt.io/swap: 2k
 status: {}

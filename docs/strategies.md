@@ -61,3 +61,6 @@
 			* therefore
 				* idle workloads are expected to stay
 				* busy workloads are expected to be evicted
+        * T1
+            * Defaults and beta2 leave too many processes with swap enabled, unable to turn it off
+              all kind of process will eventually swap. no control.

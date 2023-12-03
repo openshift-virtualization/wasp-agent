@@ -6,7 +6,7 @@ DRY=${DRY}
 
 STRATEGY=${STRATEGY:-ortho}
 SWAPPINESS=${SWAPPINESS:-60}
-SWAP_SIZE_MB=${SWAP_SIZE_MB:-100}
+SWAP_SIZE_MB=${SWAP_SIZE_MB:-4000}  # RISKY dos node? was 100
 
 
 ERESNAME=node.kubevirt.io/swap
@@ -27,6 +27,14 @@ cgroups_without_pod() {
 cgroups_with_pod() {
 	_allproccgroups | grep kubepods.slice | grep -i burstable | grep -v conmon
 }
+
+# More aggressive than the ones above
+all_leaf_cgroups() {
+	# find all cgroups which have procs associated
+	find $FSROOT/sys/fs/cgroup/*.*/ -name memory.swap.max \
+		| while read FN; do [[ -n "$(cat $(dirname $FN)/cgroup.procs)" ]] && echo $FN ; done
+}
+
 
 configureNoSwap() { # FN
 	_configureSwap FN=$1 SWAP_QUANTITY=0 ;
@@ -58,7 +66,7 @@ _configureSwap() { # FN SWAP_REQUEST MEMORY_REQUESTS
 			SWAP_MAX=$SWAP_REQUEST
 		;;
 		# the following two likely require node swapp threshold configuration
-		"ortho")
+		"ortho|ortho-only")
 		# A workload gets additional swap, which it can use under node pressure
 			#MEM_MAX=max  # no need to touch actually
 			SWAP_MAX=$SWAP_REQUEST
@@ -72,6 +80,7 @@ _configureSwap() { # FN SWAP_REQUEST MEMORY_REQUESTS
 	esac
 
 	# NOTE we add the M suffix, as swap can only be allocated on a M granularity (or page?) ... at least not on a byte basis
+	SWAP_MAX="${SWAP_MAX/k/000}"  # prag fix for kube api providing 2k for 2000, 2k not recognized by kernel
 	_cg_set "${SWAP_MAX}M" "$FN/memory.swap.max" ;
 
 	# FIXME naively dropping kube quantity into cgroups memory.max, often works ...
@@ -115,6 +124,7 @@ getPodNamespaceNameFromCgroupPath() {
 
 addSwapToThisNode() {
 	(set -x
+	swapoff -v $FSROOT/var/tmp/wasp.file || :
 	grep wasp.file /proc/swaps || {
 		local SWAPFILE=$FSROOT/var/tmp/wasp.file
 		dd if=/dev/zero of=$SWAPFILE bs=1M count=$SWAP_SIZE_MB
@@ -145,6 +155,27 @@ addSwapToThisNode() {
 	)
 }
 
+
+set_groundtruth() {
+	# FIXME we shoud set noswap for all cgroups, not just leaves, just to be sure
+	echo "Setting groundtruth"
+	all_no_swap() { while read FN ; do configureNoSwap $FN ; done ; }
+	case "$STRATEGY" in
+# TOO AGRESSIVE
+#		"ortho")
+#			# We assume that burstable will be set to max again
+#			all_leaf_cgroups | all_no_swap
+#			;;
+		"ortho-only")
+			echo "This strategy does not change any host settings, only wrkld"
+			;;
+		*)
+			cgroups_without_pod | all_no_swap
+			;;
+	esac
+}
+
+
 # FIXME hardlinks are broken if FSROOT is used, but we need it
 [[ ! -d /run/containers ]] && ln -s $FSROOT/run/containers /run/containers
 
@@ -155,9 +186,7 @@ do
 
 sleep 3
 
-# FIXME we shoud set noswap for all cgroups, not just leaves, just to be sure
-echo "Setting groundtruth"
-cgroups_without_pod | while read FN ; do configureNoSwap $FN ; done
+set_groundtruth
 
 echo "Poking holes"
 cgroups_with_pod | while read FN ; do

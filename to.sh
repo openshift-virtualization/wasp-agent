@@ -11,6 +11,10 @@ push() {
 _oc() { echo "$ oc $@" ; oc $@ ; }
 qoc() { oc $@ > /dev/null 2>&1; }
 
+apply() {
+	_oc apply -f manifests/ds.yaml -f manifests/fedora.yaml
+}
+
 deploy() {
 	local NS=wasp
 	qoc get project wasp || _oc adm new-project $NS
@@ -21,11 +25,11 @@ deploy() {
 		_oc adm policy add-cluster-role-to-user cluster-admin -z wasp
 		_oc adm policy add-scc-to-user -n $NS privileged -z wasp
 	}
-	_oc apply -f manifests/ds.yaml -f manifests/fedora.yaml
+	apply
 }
 
 destroy() {
-	oc delete -f manifests/ds.yaml -f manifests/fedora.yaml
+	_oc delete -f manifests/ds.yaml -f manifests/fedora.yaml
 }
 
 $@
