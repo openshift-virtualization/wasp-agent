@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: fedora-demo
+  name: fedora-demo
+spec:
+  replicas: 18  # Some stress, which would still fit into 4G of swap
+  selector:
+    matchLabels:
+      app: fedora-demo
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: fedora-demo
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - command:  # Stress will be using 1G of mem, but only 500M of RAM, it has to burst into SWAP
+          - bash
+          - -c
+          - "sleep 60 ; stress -v -m 2 --vm-bytes 450M --vm-hang 1"
+        image: >-
+            quay.io/fdeutsch/wasp-operator-prototype:latest
+        name: fedora
+        resources:
+          requests:
+            cpu: "0.1"
+            memory: 500M
+          limits:
+            memory: 1100M
+            node.kubevirt.io/swap: 500
+status: {}

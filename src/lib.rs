@@ -52,7 +52,14 @@ impl FS {
     }
 
     fn cg_find(&mut self, cg_pat: &str) -> Option<Cgroup> {
-        Cgroup::find(self, cg_pat)
+        let glob = Glob::new(cg_pat).unwrap();
+        let mut cg = None;
+        for entry in glob.walk(CGROUP_BASE) {
+            let pb = entry.unwrap();
+            cg = Some(self.cg(&pb.into_path()));
+            break;
+        }
+        cg
     }
 }
 
@@ -70,19 +77,7 @@ impl<'a> Cgroup<'a> {
             path: pb
         }
     }
-    fn find(fs: &'a mut FS, pattern: &str) -> Option<Cgroup<'a>> {
-        let glob = Glob::new(pattern).unwrap();
-        let mut cg = None;
-        for entry in glob.walk(CGROUP_BASE) {
-            let pb = entry.unwrap();
-            cg = Some(Cgroup {
-                fs: fs,
-                path: pb.into_path()
-            });
-            break;
-        }
-        cg
-    }
+
     fn full_path(&self, interface: &str) -> String {
         let mut pb = self.path.clone();
         pb.push(interface.strip_prefix("/").unwrap_or(interface));
@@ -118,7 +113,6 @@ impl<'a> CgInterface<'a> {
     }
 }
 
-type SwapQuantity = String;
 type ContainerId = String;
 const SWAP_RESOURCE_NAME: &str = "node.kubevirt.io/swap";
 
