@@ -8,7 +8,7 @@ $ <log into ocp 4.15 or higher>
 $ bash to.sh deploy
 
 # Demo
-$ oc apply -f manifests/demo.sh
+$ oc apply -f manifests/stress.yaml
 
 # Destroy
 $ bash to.sh destroy

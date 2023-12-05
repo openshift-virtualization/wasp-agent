@@ -3,26 +3,26 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    app: fedora-demo
-  name: fedora-demo
+    app: stress
+  name: stress
 spec:
   replicas: 10
   selector:
     matchLabels:
-      app: fedora-demo
+      app: stress
   strategy: {}
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: fedora-demo
+        app: stress
     spec:
       terminationGracePeriodSeconds: 0
       containers:
       - command:
           - bash
           - -c
-          - "while [[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] ; do sleep 1 ; done ; stress-ng -v -m 1 --vm-bytes 2G"
+          - "while [[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] ; do sleep 1 ; done ; stress -v -m 1 --vm-bytes 2G"
         image: >-
             quay.io/fdeutsch/wasp-operator-prototype:latest
         name: fedora
