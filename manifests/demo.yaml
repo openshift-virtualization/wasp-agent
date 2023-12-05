@@ -6,7 +6,7 @@ metadata:
     app: fedora-demo
   name: fedora-demo
 spec:
-  replicas: 10  # Some stress, which would still fit into 4G of swap
+  replicas: 10
   selector:
     matchLabels:
       app: fedora-demo
@@ -22,14 +22,15 @@ spec:
       - command:
           - bash
           - -c
-          - " while [[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] ; do sleep 1 ; done ; stress -v -m 1 --vm-bytes 2G --vm-hang 1"
+          - "while [[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] ; do sleep 1 ; done ; stress-ng -v -m 1 --vm-bytes 2G"
         image: >-
             quay.io/fdeutsch/wasp-operator-prototype:latest
         name: fedora
         resources:
           requests:
             cpu: "0.1"
+            memory: 1G   # Minimum amount of memory for the wrkld
           limits:
-            memory: 0.5G
-            node.kubevirt.io/swap: 1200
+            memory: 2.2G  # Give it space to burst in
+            node.kubevirt.io/swap: 1200  ## ... but a backup in case of pressure
 status: {}
