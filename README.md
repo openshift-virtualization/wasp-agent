@@ -15,7 +15,7 @@ $ bash to.sh destroy
 ```
 
 It's doing mainly two things
-1. `echo /proc/sys/vm/swappiness > 100"
+1. `echo /proc/sys/vm/swappiness > 100`
 2. For each container with swap resource `echo $SWAP_REQ > memory.swap.max`
 
 Note
