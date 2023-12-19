@@ -169,6 +169,9 @@ set_groundtruth() {
 			cgroups_without_pod | all_no_swap
 			;;
 	esac
+
+	# Disable swap for system.slice
+	echo 0 > $FSROOT/sys/fs/cgroup/system.slice
 }
 
 poke_holes() {
