@@ -28,7 +28,7 @@ spec:
         name: fedora
         resources:
           requests:
-            cpu: "0.1"
+#            cpu: "0.1"
             memory: 1G   # Minimum amount of memory for the wrkld
           limits:
             memory: 2.2G  # Give it space to burst in

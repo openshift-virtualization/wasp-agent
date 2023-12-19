@@ -118,16 +118,30 @@ getPodNamespaceNameFromCgroupPath() {
 	echo "$POD_NAMESPACE $POD_NAME $CONTAINER_ID"
 }
 
+removeExtendedResource() {
+	local RESNAME=${1/\//~1}
+	curl -s --header "Content-Type: application/json-patch+json" \
+	  --request PATCH \
+	  --data "[{\"op\": \"remove\", \"path\": \"/status/capacity/${RESNAME}\"}]" \
+	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
+}
+
+addExtendedResource() {
+	local RESNAME=${1/\//~1}
+	local QUANTITY=$2
+	curl -s --header "Content-Type: application/json-patch+json" \
+	  --request PATCH \
+	  --data "[{\"op\": \"add\", \"path\": \"/status/capacity/${RESNAME}\", \"value\": \"$QUANTITY\"}]" \
+	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
+}
+
 addSwapToThisNode() {
 	kubectl proxy &
 	local OCPID=$!
 	sleep 1
 
 	# Cleanup any potential resource until we've prepped the system
-	curl -s --header "Content-Type: application/json-patch+json" \
-	  --request PATCH \
-	  --data "[{\"op\": \"remove\", \"path\": \"/status/capacity/${ERESNAME/\//~1}\"}]" \
-	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
+	removeExtendedResource $ERESNAME
 
 	(set -x
 	# For debug
@@ -147,10 +161,7 @@ addSwapToThisNode() {
 	local SWAP_MBYTES=$(( $SWAP_KBYTES / 1024 ))
 
 	# Announce resource
-	curl -s --header "Content-Type: application/json-patch+json" \
-	  --request PATCH \
-	  --data "[{\"op\": \"add\", \"path\": \"/status/capacity/${ERESNAME/\//~1}\", \"value\": \"$SWAP_MBYTES\"}]" \
-	  http://localhost:8001/api/v1/nodes/$NODE_NAME/status
+	addExtendedResource $ERESOURCE $SWAP_MBYTES
 	kill $OCPID
 
 	)
