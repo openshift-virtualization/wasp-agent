@@ -38,7 +38,7 @@ spec:
           - name: "SWAPPINESS"
             value: "10"
           - name: "SWAP_SIZE_MB"
-            value: "14000"
+            value: "7000"
           - name: "LOOP"
             value: "true"
           - name: "DEBUG"

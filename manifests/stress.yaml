@@ -6,7 +6,7 @@ metadata:
     app: stress
   name: stress
 spec:
-  replicas: 10
+  replicas: 1
   selector:
     matchLabels:
       app: stress
@@ -28,9 +28,9 @@ spec:
         name: fedora
         resources:
           requests:
-#            cpu: "0.1"
-            memory: 1G   # Minimum amount of memory for the wrkld
+            cpu: "0.1"
+            memory: 500M   # Minimum amount of memory for the wrkld
           limits:
             memory: 2.2G  # Give it space to burst in
-            node.kubevirt.io/swap: 1200  ## ... but a backup in case of pressure
+#            node.kubevirt.io/swap: 1200  ## ... but a backup in case of pressure
 status: {}

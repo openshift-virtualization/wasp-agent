@@ -32,4 +32,4 @@ destroy() {
 	_oc delete -f manifests/ds.yaml -f manifests/fedora.yaml
 }
 
-$@
+eval "$@"
