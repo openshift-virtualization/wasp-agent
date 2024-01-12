@@ -8,15 +8,20 @@ $ <log into ocp 4.15 or higher>
 $ bash to.sh deploy
 
 # Demo
+$ oc apply -f manifests/static.yaml
 $ oc apply -f manifests/stress.yaml
+# Now increase the stress deployment replicacount in order to push out
+# memory of static pods
 
 # Destroy
 $ bash to.sh destroy
 ```
 
-It's doing mainly two things
-1. `echo /proc/sys/vm/swappiness > 100`
-2. For each container with swap resource `echo $SWAP_REQ > memory.swap.max`
-
-Note
-- Use pod with limit
+The POC does the following
+- Node
+  - Enable swap on the node
+  - Disable swap in the system.slice
+  - Set io latency for system.slice
+  - Install an OCI hook to enable swap
+- Workloads
+  - Enable swap=max for every burstable pod using an OCI hook

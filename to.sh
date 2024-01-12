@@ -1,7 +1,7 @@
 IMG_REPO=quay.io/fdeutsch/wasp-operator-prototype
 
 build() {
-	podman -r build -t $IMG_REPO -f - . < images/Dockerfile
+	podman -r build -t $IMG_REPO -f Dockerfile .
 }
 
 push() {
@@ -12,7 +12,7 @@ _oc() { echo "$ oc $@" ; oc $@ ; }
 qoc() { oc $@ > /dev/null 2>&1; }
 
 apply() {
-	_oc apply -f manifests/ds.yaml -f manifests/fedora.yaml
+	_oc apply -f manifests/ds.yaml
 }
 
 deploy() {
@@ -29,7 +29,7 @@ deploy() {
 }
 
 destroy() {
-	_oc delete -f manifests/ds.yaml -f manifests/fedora.yaml
+	_oc delete -f manifests/ds.yaml
 }
 
 eval "$@"

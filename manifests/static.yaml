@@ -3,34 +3,33 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    app: stress
-  name: stress
+    app: static
+  name: static
 spec:
-  replicas: 1
+  replicas: 50
   selector:
     matchLabels:
-      app: stress
+      app: static
   strategy: {}
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: stress
+        app: static
     spec:
       terminationGracePeriodSeconds: 0
       containers:
       - command:
           - bash
           - -c
-          - "while [[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] ; do sleep 1 ; done ; stress -v -m 1 --vm-bytes 2G --vm-hang 3"
+          - "dd if=/dev/urandom of=/dev/shm/rnd bs=1M count=60 ; sleep inf"
         image: >-
             quay.io/fdeutsch/wasp-operator-prototype:latest
         name: fedora
         resources:
           requests:
-            cpu: "0.1"
-            memory: 500M   # Minimum amount of memory for the wrkld
+            cpu: "0.01"
+            memory: 80M
           limits:
-            memory: 2.2G  # Give it space to burst in
-#            node.kubevirt.io/swap: 1200  ## ... but a backup in case of pressure
+            memory: 120M
 status: {}
