@@ -1,0 +1,36 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  generateName: vm-cirros-
+  namespace: default
+spec:
+  running: true
+  template:
+    spec:
+      architecture: amd64
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: containerdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+        memory:
+          guest: 6G
+        resources:
+          requests:
+            memory: 500Mi
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - containerDisk:
+            image: 'kubevirt/cirros-container-disk-demo:devel'
+          name: containerdisk
+        - cloudInitNoCloud:
+            userData: |
+              #!/bin/sh
+
+              echo 'printed from cloud-init userdata'
+          name: cloudinitdisk
+status: {}

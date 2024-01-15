@@ -4,7 +4,10 @@
     "path": "/opt/oci-hook-swap.sh"
   },
   "when": {
-    "always": true
+    "always": false,
+    "annotations": {
+      "kubevirt\\.io/domain": "(.+)"
+    }
   },
   "stages": ["prestart"]
 }
