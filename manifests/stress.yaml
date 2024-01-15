@@ -6,7 +6,7 @@ metadata:
     app: stress
   name: stress
 spec:
-  replicas: 4 #5 is heavy
+  replicas: 5 #5 is heavy
   selector:
     matchLabels:
       app: stress
@@ -29,7 +29,7 @@ spec:
         resources:
           requests:
             cpu: "0.1"
-            memory: 500M   # Minimum amount of memory for the wrkld
+            memory: 5M   # Minimum amount of memory for the wrkld
           limits:
             memory: 2.2G  # Give it space to burst in
 #            node.kubevirt.io/swap: 1200  ## ... but a backup in case of pressure

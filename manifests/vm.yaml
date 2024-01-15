@@ -1,8 +1,7 @@
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  generateName: vm-cirros-
-  namespace: default
+  generateName: fedora-
 spec:
   running: true
   template:
@@ -18,19 +17,21 @@ spec:
                 bus: virtio
               name: cloudinitdisk
         memory:
-          guest: 6G
-        resources:
+          guest: 4G
+        resources:   # Uncomment if you want to do manual overcommit
+          limits:
+            cpu: 0.02
           requests:
             memory: 500Mi
       terminationGracePeriodSeconds: 0
       volumes:
         - containerDisk:
-            image: 'kubevirt/cirros-container-disk-demo:devel'
+            image: 'quay.io/containerdisks/fedora:39'
           name: containerdisk
         - cloudInitNoCloud:
             userData: |
-              #!/bin/sh
-
-              echo 'printed from cloud-init userdata'
+              #cloud-config
+              password: fedora
+              chpasswd: { expire: False }
           name: cloudinitdisk
 status: {}
