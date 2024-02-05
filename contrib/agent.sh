@@ -5,30 +5,11 @@ FSROOT=${FSROOT:-/host}
 DEBUG=${DEBUG}
 DRY=${DRY}
 
-SWAPPINESS=${SWAPPINESS}
-SWAP_SIZE_MB=${SWAP_SIZE_MB:-4000}  # RISKY dos node? was 100
-
-
 _set() { echo "Setting $1 > $2" ; echo "$1" > "$2" ; }
 
-addSwapToThisNode() {
-  set -x
-  # For debug
-  grep wasp.file /proc/swaps && swapoff -v $FSROOT/var/tmp/wasp.file
-
-  grep wasp.file /proc/swaps || {
-    local SWAPFILE=$FSROOT/var/tmp/wasp.file
-    dd if=/dev/zero of=$SWAPFILE bs=1M count=$SWAP_SIZE_MB
-    #fallocate -z -l ${SWAP_SIZE_MB}M $SWAPFILE
-    chmod 0600 $SWAPFILE
-    mkswap $SWAPFILE
-    swapon $SWAPFILE
-  }
-
-  [[ -n "$SWAPPINESS" ]] && { _set "$SWAPPINESS" "$FSROOT/proc/sys/vm/swappiness"; }
-}
-
 tune_system_slice() {
+  [[ -n "$SWAPPINESS" ]] && { _set "$SWAPPINESS" "$FSROOT/proc/sys/vm/swappiness"; }
+
   echo "Tuning system.slice"
 
   # Disable swap for system.slice
@@ -52,7 +33,6 @@ main() {
   # FIXME hardlinks are broken if FSROOT is used, but we need it
   [[ ! -d /run/containers ]] && ln -s $FSROOT/run/containers /run/containers
 
-  addSwapToThisNode
   tune_system_slice
   install_oci_hook
 
