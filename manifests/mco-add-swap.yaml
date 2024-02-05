@@ -7,13 +7,12 @@ metadata:
 spec:
   config:
     ignition:
-      version: 3.2.0
+      version: 3.4.0
     systemd:
       units:
       - contents: |
           [Unit]
           Description=Provision and enable swap
-          Before=crio-install.service
           ConditionFirstBoot=no
           
           [Service]
@@ -22,6 +21,6 @@ spec:
           ExecStart=/bin/sh -c "sudo dd if=/dev/zero of=/var/tmp/swapfile count=$SWAP_SIZE_MB bs=1MiB && sudo chmod 600 /var/tmp/swapfile && sudo mkswap /var/tmp/swapfile && sudo swapon /var/tmp/swapfile && free -h"
           
           [Install]
-          WantedBy=multi-user.target
+          RequiredBy=kubelet-dependencies.target
         enabled: true
         name: swap-provision.service
