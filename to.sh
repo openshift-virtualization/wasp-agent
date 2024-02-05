@@ -13,6 +13,7 @@ qoc() { oc $@ > /dev/null 2>&1; }
 
 apply() {
   _oc apply -f manifests/ds.yaml
+  _oc apply -f manifests/mco-add-swap.yaml
 }
 
 patch() {
@@ -34,6 +35,7 @@ deploy() {
 
 destroy() {
   _oc delete -f manifests/ds.yaml
+  _oc delete -f manifests/mco-add-swap.yaml
 }
 
 eval "$@"
