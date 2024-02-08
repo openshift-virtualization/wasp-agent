@@ -15,11 +15,9 @@ apply() {
   _oc apply -f manifests/ds.yaml
   _oc apply -f manifests/kubelet-configuration-with-swap.yaml
   _oc apply -f manifests/machineconfig-add-swap.yaml
+  qoc get namespace openshift-cnv && _oc patch --type=merge  -f manifests/prep-hco.yaml --patch-file manifests/prep-hco.yaml || :
 }
 
-patch() {
-  _oc patch --type=merge  -f manifests/prep-hco.yaml --patch-file manifests/prep-hco.yaml || :
-}
 
 deploy() {
   local NS=wasp
@@ -38,6 +36,7 @@ destroy() {
   _oc delete -f manifests/ds.yaml
   _oc delete -f manifests/machineconfig-add-swap.yaml
   _oc delete -f manifests/kubelet-configuration-with-swap.yaml
+  qoc get namespace openshift-cnv && sed 's#"add"#"remove"#' manifests/prep-hco.yaml | _oc patch --type=merge  -f manifests/prep-hco.yaml --patch - || :
 }
 
 eval "$@"
