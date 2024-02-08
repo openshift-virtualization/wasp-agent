@@ -23,5 +23,6 @@ The POC does the following
   - Disable swap in the system.slice
   - Set io latency for system.slice
   - Install an OCI hook to enable swap
+  - Set memory.high for kubepods.slice (TODO)
 - Workloads
   - Enable swap=max for every burstable pod using an OCI hook
