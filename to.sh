@@ -13,7 +13,8 @@ qoc() { oc $@ > /dev/null 2>&1; }
 
 apply() {
   _oc apply -f manifests/ds.yaml
-  _oc apply -f manifests/kubelet-confiuration.yaml
+  _oc apply -f manifests/kubelet-configuration-with-swap.yaml
+  _oc apply -f manifests/machineconfig-add-swap.yaml
 }
 
 patch() {
@@ -35,7 +36,8 @@ deploy() {
 
 destroy() {
   _oc delete -f manifests/ds.yaml
-  _oc delete -f manifests/kubelet-confiuration.yaml
+  _oc delete -f manifests/machineconfig-add-swap.yaml
+  _oc delete -f manifests/kubelet-configuration-with-swap.yaml
 }
 
 eval "$@"
