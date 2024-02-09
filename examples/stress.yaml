@@ -6,7 +6,7 @@ metadata:
     app: stress
   name: stress
 spec:
-  replicas: 5 #5 is heavy
+  replicas: 25
   selector:
     matchLabels:
       app: stress
@@ -17,20 +17,28 @@ spec:
       labels:
         app: stress
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 5
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: stress
+          matchLabelKeys:
+            - pod-template-hash
       terminationGracePeriodSeconds: 0
       containers:
       - command:
           - bash
           - -c
-          - "while [[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] ; do sleep 1 ; done ; stress -v -m 1 --vm-bytes 2G --vm-hang 3"
+          - "[[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] && exit 1 || stress -v -m 1 --vm-bytes 1G --vm-hang 3"
         image: >-
             quay.io/fdeutsch/wasp-operator-prototype:latest
         name: fedora
         resources:
           requests:
-            cpu: "0.1"
-            memory: 5M   # Minimum amount of memory for the wrkld
+            cpu: "0.01"
+            memory: 500M   # Minimum amount of memory for the wrkld
           limits:
-            memory: 2.2G  # Give it space to burst in
-#            node.kubevirt.io/swap: 1200  ## ... but a backup in case of pressure
+            memory: 1.1G  # Give it space to burst in
 status: {}

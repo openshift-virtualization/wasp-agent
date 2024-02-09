@@ -43,9 +43,10 @@ destroy() {
 }
 
 
-wait_for_worker_mcp_update_to_complete() {
+wait_for_mcp() {
+  sleep 10
   oc get mcp worker -o json \
-    | jq '.status.conditions[] | select(.type == "Updating" and .status == "True")' || die "Not updating"
+    | jq -e '.status.conditions | map(select(.type == "Updating" and .status == "True")) | length > 0' || die "Not updating"
   x "oc wait mcp worker --for condition=Updated=True --timeout=15m"
 }
 
@@ -54,4 +55,8 @@ check_nodes() {
     | while read W ; do oc debug node/$W -- sh -c "free -m" 2>&1 | grep -E "^(Starting|Swap)" ; done
 }
 
-eval "$@"
+usage() {
+  grep -E -o "^.*\(\)" $0
+}
+
+eval "${@:-usage}"
