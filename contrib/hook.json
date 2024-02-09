@@ -1,14 +1,12 @@
 {
-  "version": "1.0.0",
-  "hook": {
-    "path": "/opt/oci-hook-swap.sh"
-  },
-  "when": {
-    "always": false,
-    "annotations": {
-      "kubevirt\\.io/domain": "(.+)"
-    }
-  },
-  "stages": ["prestart"]
+    "version": "1.0.0",
+    "hook": {
+        "path": "/opt/oci-hook-swap.sh"
+    },
+    "when": {
+        "always": false
+    },
+    "stages": [
+        "prestart"
+    ]
 }
-
