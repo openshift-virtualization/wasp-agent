@@ -40,5 +40,6 @@ spec:
             cpu: "0.01"
             memory: 500M   # Minimum amount of memory for the wrkld
           limits:
+            cpu: "0.05"
             memory: 1.1G  # Give it space to burst in
 status: {}
