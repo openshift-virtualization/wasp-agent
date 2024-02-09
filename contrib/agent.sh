@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-#
+
 # Expected to be set by DS
 FSROOT=${FSROOT:-/host}
 DEBUG=${DEBUG}
@@ -19,6 +19,11 @@ tune_system_slice() {
   MAJMIN=$(findmnt $FSROOT/ --output MAJ:MIN -n | sed "s/:.*/:0/")  # fixme can be manually provided
   echo "Using MAJMIN $MAJMIN"
   _set "$MAJMIN target=50" $FSROOT/sys/fs/cgroup/system.slice/io.latency
+
+  echo "Tune kubepods.slice"
+  MEM_HIGH_PERCENT=5
+  MEM_HIGH=$(( $(< /sys/fs/cgroup/kubepods.slice/memory.max) - $(< /sys/fs/cgroup/kubepods.slice/memory.max) / $MEM_HIGH_PERCENT ))
+  _set $MEM_HIGH /sys/fs/cgroup/kubepods.slice/memory.high
 }
 
 install_oci_hook() {
