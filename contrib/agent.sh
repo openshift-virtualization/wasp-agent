@@ -30,8 +30,8 @@ install_oci_hook() {
   # FIXME we shoud set noswap for all cgroups, not just leaves, just to be sure
   echo "installing hook"
 
-  cp hook.sh $FSROOT/opt/oci-hook-swap.sh
-  cp hook.json $FSROOT/run/containers/oci/hooks.d/swap-for-burstable.json
+  cp -v hook.sh $FSROOT/opt/oci-hook-swap.sh
+  cp -v hook.json $FSROOT/run/containers/oci/hooks.d/swap-for-burstable.json
 }
 
 main() {
