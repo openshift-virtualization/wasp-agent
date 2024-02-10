@@ -22,8 +22,8 @@ tune_system_slice() {
 
   echo "Tune kubepods.slice"
   MEM_HIGH_PERCENT=5
-  MEM_HIGH=$(( $(< /sys/fs/cgroup/kubepods.slice/memory.max) - $(< /sys/fs/cgroup/kubepods.slice/memory.max) / $MEM_HIGH_PERCENT ))
-  _set $MEM_HIGH /sys/fs/cgroup/kubepods.slice/memory.high
+  MEM_HIGH=$(( $(< $FSROOT/sys/fs/cgroup/kubepods.slice/memory.max) - $(< $FSROOT/sys/fs/cgroup/kubepods.slice/memory.max) / $MEM_HIGH_PERCENT ))
+  _set $MEM_HIGH $FSROOT/sys/fs/cgroup/kubepods.slice/memory.high
 }
 
 install_oci_hook() {

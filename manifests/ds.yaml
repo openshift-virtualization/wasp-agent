@@ -34,7 +34,7 @@ spec:
           - name: "FSROOT"
             value: "/host"
           - name: "SWAPPINESS"
-            value: "10"
+            value: "5"
           - name: "LOOP"
             value: "true"
           - name: "DEBUG"

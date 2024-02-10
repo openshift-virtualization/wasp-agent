@@ -2,19 +2,23 @@
 #
 set -e
 
+WITH_DEPLOY=${WITH_DEPLOY:-true}
+DRY=${DRY:-false}
+
 c() { echo "# $@" ; }
 n() { echo "" ; }
-x() { echo "\$ $@" ; eval "$@" ; }
+x() { echo "\$ $@" ; ${DRY} || eval "$@" ; }
 red() { echo -e "\e[0;31m$@\e[0m" ; }
 green() { echo -e "\e[0;32m$@\e[0m" ; }
 die() { red "FATAL: $@" ; exit 1 ; }
-assert() { echo "(assert:) \$ $@" ; eval $@ || { echo "(assert?) FALSE" ; die "Assertion ret 0 failed: '$@'" ; } ; green "(assert?) True" ; }
+assert() { echo "(assert:) \$ $@" ; { ${DRY} || eval $@ ; } || { echo "(assert?) FALSE" ; die "Assertion ret 0 failed: '$@'" ; } ; green "(assert?) True" ; }
 
 c "Assumption: 'oc' is present and has access to the cluster"
 
-if false; then
+if $WITH_DEPLOY; then
 c "Ensure that all MCP workers are updated"
 assert "oc get mcp worker -o json | jq -e '.status.conditions[] | select(.type == \"Updated\" and .status == \"True\")'"
+
 c "Ensure there is no swap"
 assert "bash to.sh check_nodes | grep -E '0\\s+0\\s+0'"
 
@@ -26,33 +30,45 @@ n
 c "Wait for MCP to pickup new MC"
 x "bash to.sh wait_for_mcp"
 fi
+
 n
 c "Check the presence of swap"
 assert "grep 'Environment=SWAP_SIZE_MB=5000' manifests/machineconfig-add-swap.yaml"
-assert "bash to.sh check_nodes | grep -E '4999\\s+0\\s+4999'"
+assert "bash to.sh check_nodes | grep -E '4999\\s+[0-9]+\\s+[0-9]+'"
 
 n
 c "Check if the container's memory.swap.max is configured properly"
-c "[[ \`oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max\` == 'max' ]]"
+c "[[ \`oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max\` != '0' ]]"
 
 n
 c "Run a workload to force swap utilization"
+# FIXME limit it to one node to not trash the cluster
 x "oc apply -f examples/stress.yaml"
 x "oc wait deployment stress --for condition=Available=True"
+
+n
 c "Give it some time to generate some load"
 x "sleep 60"
+
+n
+x "Remove the workload"
+x "oc apply -f examples/stress.yaml"
+
+n
+c "Check that some swapping took place"
 x "bash to.sh check_nodes"
 assert "[[ \`bash to.sh check_nodes | awk '{print \$3;}' | grep -E '[0-9]+' | paste -sd+ | bc\` > 0 ]]"
 
+if $WITH_DEPLOY; then
 n
-c "Delete it"
+c "Delete the operator"
 x "bash to.sh destroy"
 x "bash to.sh wait_for_mcp"
 
 n
 c "Check the absence of swap"
 assert "bash to.sh check_nodes | grep -E '0\\s+0\\s+0'"
-
+fi
 
 n
 c "The validation has passed! All is well."

@@ -6,7 +6,7 @@ metadata:
     app: stress
   name: stress
 spec:
-  replicas: 25
+  replicas: 30
   selector:
     matchLabels:
       app: stress
@@ -17,15 +17,15 @@ spec:
       labels:
         app: stress
     spec:
-      topologySpreadConstraints:
-        - maxSkew: 5
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app: stress
-          matchLabelKeys:
-            - pod-template-hash
+#      topologySpreadConstraints:
+#        - maxSkew: 5
+#          topologyKey: kubernetes.io/hostname
+#          whenUnsatisfiable: ScheduleAnyway
+#          labelSelector:
+#            matchLabels:
+#              app: stress
+#          matchLabelKeys:
+#            - pod-template-hash
       terminationGracePeriodSeconds: 0
       containers:
       - command:
@@ -40,6 +40,6 @@ spec:
             cpu: "0.01"
             memory: 500M   # Minimum amount of memory for the wrkld
           limits:
-            cpu: "0.05"
+            cpu: "0.01"
             memory: 1.1G  # Give it space to burst in
 status: {}
