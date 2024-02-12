@@ -6,7 +6,7 @@ metadata:
     app: stress
   name: stress
 spec:
-  replicas: 30
+  replicas: 1
   selector:
     matchLabels:
       app: stress
@@ -31,13 +31,12 @@ spec:
       - command:
           - bash
           - -c
-          - "[[ \"$(cat /sys/fs/cgroup/memory.swap.max)\" == \"0\" ]] && exit 1 || stress -v -m 1 --vm-bytes 1G --vm-hang 3"
+          - "stress -v -m 1 --vm-bytes 1G --vm-hang 3"
         image: >-
             quay.io/fdeutsch/wasp-operator-prototype:latest
         name: fedora
         resources:
           requests:
-            cpu: "0.01"
             memory: 500M   # Minimum amount of memory for the wrkld
           limits:
             cpu: "0.01"
