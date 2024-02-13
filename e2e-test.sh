@@ -14,6 +14,8 @@ die() { red "FATAL: $@" ; exit 1 ; }
 assert() { echo "(assert:) \$ $@" ; { ${DRY} || eval $@ ; } || { echo "(assert?) FALSE" ; die "Assertion ret 0 failed: '$@'" ; } ; green "(assert?) True" ; }
 
 c "Assumption: 'oc' is present and has access to the cluster"
+assert "which oc"
+
 if $WITH_DEPLOY; then
   c "Ensure that all MCP workers are updated"
   assert "oc get mcp worker -o json | jq -e '.status.conditions[] | select(.type == \"Updated\" and .status == \"True\")'"

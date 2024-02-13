@@ -44,9 +44,7 @@ destroy() {
 
 
 wait_for_mcp() {
-  sleep 10
-  oc get mcp worker -o json \
-    | jq -e '.status.conditions | map(select(.type == "Updating" and .status == "True")) | length > 0' || die "Not updating"
+  x "oc wait mcp worker --for condition=Updated=False --timeout=10s"
   x "oc wait mcp worker --for condition=Updated=True --timeout=15m"
 }
 
