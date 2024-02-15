@@ -21,16 +21,17 @@ tune_system_slice() {
   echo "Tune kubepods.slice"
   # Gi is pow2
   {
-    Ki=1024  Mi=$((Ki * Ki))  Gi=$((Mi * Ki))  Ti=$((Gi * Ki))
-    KB=1000 MB=$((KB * KB)) GB=$((MB * KB)) TB=$((GB * KB))
-
     MEM_MAX=$(< $FSROOT/sys/fs/cgroup/kubepods.slice/memory.max)
 
     # We need to get this from kubelet.conf
-    THRESHOLD_BYTES=$(( 1*Gi ))
+    THRESHOLD_BYTES=$(numfmt --from=auto <<<100M)
+    KUBELET_SOFT_MEM=$(cat $FSROOT/etc/kubernetes/kubelet.conf | jq -r ".evictionSoft[\"memory.available\"]")
+    if [[ -n "$KUBELET_SOFT_MEM" ]];
+    then
+      THRESHOLD_BYTES=$(numfmt --from=auto <<<$KUBELET_SOFT_MEM)
+    fi
 
     MEM_HIGH=$(( MEM_MAX - THRESHOLD_BYTES ))
-
     _set $MEM_HIGH $FSROOT/sys/fs/cgroup/kubepods.slice/memory.high
   }
 }
