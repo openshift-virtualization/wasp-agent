@@ -26,9 +26,10 @@ tune_system_slice() {
     # We need to get this from kubelet.conf
     THRESHOLD_BYTES=$(numfmt --from=auto <<<100M)
     KUBELET_SOFT_MEM=$(cat $FSROOT/etc/kubernetes/kubelet.conf | jq -r ".evictionSoft[\"memory.available\"]")
-    if [[ -n "$KUBELET_SOFT_MEM" ]];
+    if [[ "$KUBELET_SOFT_MEM" != "null" ]];
     then
       THRESHOLD_BYTES=$(numfmt --from=auto <<<$KUBELET_SOFT_MEM)
+      echo "Aligning to soft-eviction threshold: $THRESHOLD_BYTES"
     fi
 
     MEM_HIGH=$(( MEM_MAX - THRESHOLD_BYTES ))
