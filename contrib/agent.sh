@@ -30,6 +30,8 @@ tune_system_slice() {
     then
       THRESHOLD_BYTES=$(numfmt --from=auto <<<$KUBELET_SOFT_MEM)
       echo "Aligning to soft-eviction threshold: $THRESHOLD_BYTES"
+    else
+      echo "Setting memory.high based on default $THRESHOLD_BYTES"
     fi
 
     MEM_HIGH=$(( MEM_MAX - THRESHOLD_BYTES ))
