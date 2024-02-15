@@ -18,7 +18,7 @@ apply() {
   _oc apply -f manifests/ds.yaml
   _oc apply -f manifests/kubelet-configuration-with-swap.yaml
   _oc apply -f manifests/machineconfig-add-swap.yaml
-  -oc apply -f manifests/prometheus-rules.yaml
+  _oc apply -f manifests/prometheus-rules.yaml
   qoc get namespace openshift-cnv && _oc patch --type=merge  -f manifests/prep-hco.yaml --patch-file manifests/prep-hco.yaml || i "No CNV, No HCO patch"
 }
 
