@@ -2,8 +2,6 @@
 
 # Expected to be set by DS
 FSROOT=${FSROOT:-/host}
-DEBUG=${DEBUG}
-DRY=${DRY}
 
 _set() { echo "Setting $1 > $2" ; echo "$1" > "$2" ; }
 

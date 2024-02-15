@@ -35,12 +35,6 @@ spec:
             value: "/host"
           - name: "SWAPPINESS"
             value: "5"
-          - name: "LOOP"
-            value: "true"
-          - name: "DEBUG"
-            value: ""
-          - name: "DRY"
-            value: ""
           resources:
             requests:
               cpu: 100m
