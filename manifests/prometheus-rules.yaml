@@ -14,7 +14,7 @@ spec:
         summary: A node is swapping memory pages
       expr: |
         # In MB/s
-        irate(node_memory_SwapFree_bytes{job="node-exporter"}[1m]) / 1024^2 > 0
+        irate(node_memory_SwapFree_bytes{job="node-exporter"}[5m]) / 1024^2 > 0
       for: 1m
       labels:
         severity: critical
