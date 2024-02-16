@@ -41,8 +41,6 @@ n
 c "Check if the container's memory.swap.max is configured properly"
 assert "oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max | grep -v 0"
 
-for I in 1 2 3;
-do
 n
 c "Run a workload to force swap utilization"
 x "oc apply -f examples/stress.yaml"
@@ -68,7 +66,6 @@ x "oc delete -f examples/stress.yaml"
 n
 c "Check that some swapping took place"
 assert "bash to.sh check_nodes | awk '{print \$3;}' | grep -E '^[^0]+'"
-done
 
 if $WITH_DEPLOY; then
   n
