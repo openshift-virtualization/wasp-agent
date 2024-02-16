@@ -65,7 +65,7 @@ x "oc delete -f examples/stress.yaml"
 
 n
 c "Check that some swapping took place"
-assert "bash to.sh check_nodes | awk '{print \$3;}' | grep -E '^[^0]+'"
+assert "bash to.sh check_nodes | grep Swap | awk '{print \$3;}' | grep -E '^[^0]+'"
 
 if $WITH_DEPLOY; then
   n
