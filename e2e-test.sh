@@ -39,11 +39,10 @@ assert "bash to.sh check_nodes | grep -E '4999\\s+[0-9]+\\s+[0-9]+'"
 
 n
 c "Check if the container's memory.swap.max is configured properly"
-c "[[ \`oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max\` != '0' ]]"
+assert "oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max | grep -v 0"
 
 n
 c "Run a workload to force swap utilization"
-# FIXME limit it to one node to not trash the cluster
 x "oc apply -f examples/stress.yaml"
 x "export DST_NODE=\$(oc get nodes -l node-role.kubernetes.io/worker --no-headers -o custom-columns=NAME:.metadata.name | head -n1)"
 c "DST_NODE=\$DST_NODE"
@@ -51,8 +50,14 @@ x "oc get deployment stress -o json | jq \".spec.template.spec.nodeName = \\\"\$
 x "oc wait deployment stress --for condition=Available=True"
 
 n
-c "Give it some time to generate some load"
-x "sleep 100"
+c "Give it enough time to generate load and for the alert to start firing"
+x "sleep 3m"
+
+n
+c "Ensure the alert is firing"
+# https://access.redhat.com/solutions/4250221
+x "export ALERT_MANAGER=\$(oc get route alertmanager-main -n openshift-monitoring -o jsonpath='{@.spec.host}')"
+assert "curl -s -k -H \"Authorization: Bearer \$(oc create token prometheus-k8s -n openshift-monitoring)\"  https://\$ALERT_MANAGER/api/v1/alerts | jq -e \".data | map(select(.labels.alertname == \\\"NodeSwapping\\\")) | .[0]\""
 
 n
 c "Remove the workload"
@@ -60,8 +65,7 @@ x "oc delete -f examples/stress.yaml"
 
 n
 c "Check that some swapping took place"
-x "bash to.sh check_nodes"
-assert "[[ \`bash to.sh check_nodes | awk '{print \$3;}' | grep -E '[0-9]+' | paste -sd+ | bc\` > 0 ]]"
+assert "bash to.sh check_nodes | awk '{print \$3;}' | grep -E '^[^0]+'"
 
 if $WITH_DEPLOY; then
   n

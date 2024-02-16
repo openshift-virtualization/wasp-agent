@@ -9,7 +9,7 @@ spec:
     rules:
     - alert: NodeSwapping
       annotations:
-        description: Node {{ $labels.instance }} is swapping at a rate of {{ printf "%.2f" $value }}MB/s
+        description: Node {{ $labels.instance }} is swapping at a rate of {{ printf "%.2f" $value }} MB/s
         runbook_url: https://github.com/fabiand/wasp-operator-prototype/tree/main/runbooks/alerts/NodeSwapping.md
         summary: A node is swapping memory pages
       expr: |

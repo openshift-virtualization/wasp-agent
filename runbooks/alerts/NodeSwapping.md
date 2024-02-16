@@ -18,9 +18,10 @@ nodes which are swapping by looking at the
 
 ## Mitigation
 
-The resolution depends on the particular issue reported in the logs.
-
 Common mitigations include
 
 - Setup memory reousrce limits in order to limit individual workloads
-- Reduce the number of workloads running on a node
+- Reduce the number of workloads running on an affected node using
+  eviction
+- Leverage the descheduler for rebalancing workloads according to node
+  utilization
