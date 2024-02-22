@@ -33,7 +33,7 @@ if $WITH_DEPLOY; then
 fi
 
 n
-c "Check the presence of swap"
+c "Ensure the presence of swap"
 assert "grep 'Environment=SWAP_SIZE_MB=5000' manifests/machineconfig-add-swap.yaml"
 assert "bash to.sh check_nodes | grep -E '4999\\s+[0-9]+\\s+[0-9]+'"
 
@@ -65,7 +65,7 @@ x "oc delete -f examples/stress.yaml"
 
 n
 c "Check that some swapping took place"
-assert "bash to.sh check_nodes | awk '{print \$3;}' | grep -E '^[^0]+'"
+assert "bash to.sh check_nodes | grep Swap | awk '{print \$3;}' | grep -E '^[^0]+'"
 
 if $WITH_DEPLOY; then
   n

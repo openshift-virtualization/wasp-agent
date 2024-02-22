@@ -10,3 +10,7 @@ spec:
       #node-role.kubernetes.io/worker: '' # node
   kubeletConfig:
     failSwapOn: false
+    evictionSoft:
+      memory.available: "1Gi"
+    evictionSoftGracePeriod:
+      memory.available: "1m30s"

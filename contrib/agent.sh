@@ -2,8 +2,6 @@
 
 # Expected to be set by DS
 FSROOT=${FSROOT:-/host}
-DEBUG=${DEBUG}
-DRY=${DRY}
 
 _set() { echo "Setting $1 > $2" ; echo "$1" > "$2" ; }
 
@@ -21,9 +19,24 @@ tune_system_slice() {
   _set "$MAJMIN target=50" $FSROOT/sys/fs/cgroup/system.slice/io.latency
 
   echo "Tune kubepods.slice"
-  MEM_HIGH_PERCENT=5
-  MEM_HIGH=$(( $(< $FSROOT/sys/fs/cgroup/kubepods.slice/memory.max) - $(< $FSROOT/sys/fs/cgroup/kubepods.slice/memory.max) / $MEM_HIGH_PERCENT ))
-  _set $MEM_HIGH $FSROOT/sys/fs/cgroup/kubepods.slice/memory.high
+  # Gi is pow2
+  {
+    MEM_MAX=$(< $FSROOT/sys/fs/cgroup/kubepods.slice/memory.max)
+
+    # We need to get this from kubelet.conf
+    THRESHOLD_BYTES=$(numfmt --from=auto <<<100M)
+    KUBELET_SOFT_MEM=$(cat $FSROOT/etc/kubernetes/kubelet.conf | jq -r ".evictionSoft[\"memory.available\"]")
+    if [[ "$KUBELET_SOFT_MEM" != "null" ]];
+    then
+      THRESHOLD_BYTES=$(numfmt --from=auto <<<$KUBELET_SOFT_MEM)
+      echo "Aligning to soft-eviction threshold: $THRESHOLD_BYTES"
+    else
+      echo "Setting memory.high based on default $THRESHOLD_BYTES"
+    fi
+
+    MEM_HIGH=$(( MEM_MAX - THRESHOLD_BYTES ))
+    _set $MEM_HIGH $FSROOT/sys/fs/cgroup/kubepods.slice/memory.high
+  }
 }
 
 install_oci_hook() {
