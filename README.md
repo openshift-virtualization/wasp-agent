@@ -3,8 +3,8 @@
 $ bash to.sh build
 $ bash to.sh push  # only to my account right now
 
-# Deploy
-$ <log into ocp 4.15 or higher>
+# Deploy to OCP 4.15 or higher
+$ oc login --token= …
 $ bash to.sh deploy
 
 # Demo
