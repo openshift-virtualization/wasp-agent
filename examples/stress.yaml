@@ -40,5 +40,5 @@ spec:
             memory: 500M   # Minimum amount of memory for the wrkld
           limits:
             cpu: "0.01"
-            memory: 500M  # We force the workload to swap
+            memory: 1.1G
 status: {}
