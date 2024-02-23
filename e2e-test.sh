@@ -15,6 +15,7 @@ assert() { echo "(assert:) \$ $@" ; { ${DRY} || eval $@ ; } || { echo "(assert?)
 
 c "Assumption: 'oc' is present and has access to the cluster"
 assert "which oc"
+assert "which jq"
 
 if $WITH_DEPLOY; then
   c "Ensure that all MCP workers are updated"
@@ -47,7 +48,7 @@ c "Run a workload to force swap utilization"
 x "oc apply -f examples/stress.yaml"
 x "export DST_NODE=\$(oc get nodes -l node-role.kubernetes.io/worker --no-headers -o custom-columns=NAME:.metadata.name | head -n1)"
 c "DST_NODE=\$DST_NODE"
-x "oc get deployment stress -o json | jq \".spec.template.spec.nodeName = \\\"\$DST_NODE\\\" | .spec.replicas = 20\" | oc apply -f -"
+x "oc get deployment stress -o json | jq \".spec.template.spec.nodeName = \\\"\$DST_NODE\\\" | .spec.replicas = 25\" | oc apply -f -"
 x "oc wait deployment stress --for condition=Available=True"
 
 n
