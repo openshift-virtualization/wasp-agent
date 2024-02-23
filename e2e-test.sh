@@ -37,9 +37,10 @@ c "Ensure the presence of swap"
 assert "grep 'Environment=SWAP_SIZE_MB=5000' manifests/machineconfig-add-swap.yaml"
 assert "bash to.sh check_nodes | grep -E '4999\\s+[0-9]+\\s+[0-9]+'"
 
-n
-c "Check if the container's memory.swap.max is configured properly"
-assert "oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max | grep -v 0"
+# FIXME this will urn a besteffort pod
+#n
+#c "Check if the container's memory.swap.max is configured properly"
+#assert "oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max | grep -v 0"
 
 n
 c "Run a workload to force swap utilization"
