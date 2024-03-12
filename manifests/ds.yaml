@@ -31,6 +31,11 @@ spec:
             quay.io/fdeutsch/wasp-operator-prototype:latest
           imagePullPolicy: Always
           env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
           - name: "FSROOT"
             value: "/host"
           - name: "SWAPPINESS"
