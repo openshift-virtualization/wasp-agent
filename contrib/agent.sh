@@ -48,12 +48,13 @@ install_oci_hook() {
 }
 
 main() {
-  # FIXME hardlinks are broken if FSROOT is used, but we need it
-  [[ ! -d /run/containers ]] && ln -s $FSROOT/run/containers /run/containers
+  if [[ ! -n "$DRY_RUN" ]]; then
+    # FIXME hardlinks are broken if FSROOT is used, but we need it
+    [[ ! -d /run/containers ]] && ln -s $FSROOT/run/containers /run/containers
 
-  tune_system_slice
-  install_oci_hook
-
+    tune_system_slice
+    install_oci_hook
+  fi
   echo "Done"
 
   sleep inf
