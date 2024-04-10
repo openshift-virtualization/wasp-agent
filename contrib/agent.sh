@@ -1,7 +1,8 @@
 #!/usr/bin/bash
 
-# Expected to be set by DS
-FSROOT=${FSROOT:-/host}
+source pods_cache.sh
+
+set -xo pipefail
 
 _set() { echo "Setting $1 > $2" ; echo "$1" > "$2" ; }
 
@@ -47,13 +48,31 @@ install_oci_hook() {
   cp -v hook.json $FSROOT/run/containers/oci/hooks.d/swap-for-burstable.json
 }
 
+cleanup() {
+  rm -rf "$POD_CACHE_DIR/*.json"
+  rm -rf "$PID_FILE"
+}
+
 main() {
+
+  rm -rf $POD_CACHE_DIR
+  rm -rf $WASP_DIR
+
+  mkdir -p $WASP_DIR $POD_CACHE_DIR
+
+
+  echo $$ > $PID_FILE
+  trap cleanup EXIT SIGKILL SIGINT
+
   if [[ ! -n "$DRY_RUN" ]]; then
     # FIXME hardlinks are broken if FSROOT is used, but we need it
     [[ ! -d /run/containers ]] && ln -s $FSROOT/run/containers /run/containers
 
     tune_system_slice
     install_oci_hook
+    prepare_node_info
+    pod_cache
+
   fi
   echo "Done"
 
