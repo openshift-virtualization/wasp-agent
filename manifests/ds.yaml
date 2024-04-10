@@ -2,7 +2,6 @@ kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: wasp-agent
-  namespace: wasp
   labels:
     app: wasp
     tier: node
@@ -28,13 +27,19 @@ spec:
       containers:
         - name: wasp-agent
           image: >-
-            quay.io/fdeutsch/wasp-operator-prototype:latest
+            quay.io/openshift-virtualization/wasp-agent:v0.0.10
           imagePullPolicy: Always
           env:
           - name: "FSROOT"
             value: "/host"
           - name: "SWAPPINESS"
             value: "5"
+          - name: "NODE_NAME"
+            valueFrom:
+              fieldRef:
+                fieldPath: "spec.nodeName"
+          - name: "DRY_RUN"
+            value: "false"
           resources:
             requests:
               cpu: 100m
@@ -42,12 +47,37 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
-          - name: host
-            mountPath: "/host"
+          - name: hostopt
+            mountPath: "/host/opt"
+          - name: hostproc
+            mountPath: "/host/proc"
+          - name: hostetc
+            mountPath: "/host/etc"
+          - name: hostrun
+            mountPath: "/host/run"
+          - name: hostsys
+            mountPath: "/host/sys"
+          - name: hosttmp
+            mountPath: "/host/tmp"
       volumes:
-      - name: host
+      - name: hostproc
         hostPath:
-          path: "/"
+          path: "/proc"
+      - name: hostopt
+        hostPath:
+          path: "/opt"
+      - name: hostetc
+        hostPath:
+          path: "/etc"
+      - name: hostrun
+        hostPath:
+          path: "/run"
+      - name: hostsys
+        hostPath:
+          path: "/sys"
+      - name: hosttmp
+        hostPath:
+          path: "/tmp"
       priorityClassName: system-node-critical
   updateStrategy:
     type: RollingUpdate
