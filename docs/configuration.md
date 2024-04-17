@@ -23,6 +23,7 @@ SWAP resources to burstable VM workloads only.
 
 * `oc` is available
 * Logged into cluster with `cluster-admin` role
+* A defined memory over-commit ratio. By default: 150%
 
 ### Procedure
 
@@ -49,6 +50,19 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
    [example](../manifests/kubelet-configuration-with-swap.yaml).
 
 4. Create `MachineConfig` to provision swap
+
+   > [!IMPORTANT]
+   > The amount of swap space to be provisioned on a node must
+   > be calculated according to the following formula:
+   >
+   >     NODE_SWAP_SPACE = NODE_RAM * MEMORY_OVER_COMMIT_RATIO
+   >
+   > Example:
+   >
+   >     NODE_SWAP_SPACE = 16 GB * 150%
+   >                     = 16 GB * 0.5
+   >                     =  8 GB
+
    Create a `MachineConfig` according to the following
    [example](../manifests/machineconfig-add-swap.yaml).
 
