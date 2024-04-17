@@ -12,13 +12,13 @@
 > swap usage for containres on the node level.
 > The low-level nature requires the `DaemonSet` to be privileged.
 
-1. Creata a privileged service account:
+1. Create a privileged service account:
 
 ```console
-$ oc adm new-project wasp-agent
-$ oc create sa -n wasp-agent wasp-agent
-$ oc adm policy add-cluster-role-to-user cluster-admin -z wasp-agent
-$ oc adm policy add-scc-to-user -n wasp-agent privileged -z wasp-agent
+$ oc adm new-project wasp
+$ oc create sa -n waspi wasp
+$ oc adm policy add-cluster-role-to-user cluster-admin -z wasp
+$ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
 
 2. Deploy `wasp-agent`
@@ -41,6 +41,7 @@ $ oc adm policy add-scc-to-user -n wasp-agent privileged -z wasp-agent
 
 ```console
 $ oc patch --type=merge  -f [../manifests/prep-hco.yaml](../manifests/prep-hco.yaml) --patch-file [../manifests/prep-hco.yaml](../manifests/prep-hco.yaml)
+```
 
 ## Verification
 
