@@ -94,8 +94,13 @@ $ oc patch --type=merge \
    TBD
 2. Validate correctly configured Kubelet
    TBD
-3. Validate correctly provisioned swap
-   TBD
+3. Validate correctly provisioned swap:
+
+    $ oc get nodes -l node-role.kubernetes.io/worker
+    # Select a node from the provided list
+
+    $ oc debug node/<selected-node> -- free -m
+
 4. Validate OpenShift Virtualization configuration
    TBD
 
