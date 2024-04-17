@@ -1,11 +1,27 @@
-# Configuring WASP agent for higher workload density
+# Configuring higher workload density
 
-## Prerequisites
+You can configure a higher VM workload densityin your cluster
+by over-committing memory resources (RAM).
+
+While over-committed memory can lead to a higher workload density, at
+the same time this will lead to some side-effects:
+
+- Lower workload performance on a highly utilized system
+
+Some workloads are more suited for higher workload density than
+others, for example:
+
+- Many similar workloads
+- Underutilized workloads
+
+## Configuring higher workload density with the wasp-agent
+
+### Prerequisites
 
 * `oc` is available
 * Logged into cluster with `cluster-admin` role
 
-## Procedure
+### Procedure
 
 > [!NOTE]
 > The `wasp-agent` will deploy an OCI hook in order to enable
@@ -39,14 +55,13 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 6. Configure OpenShift Virtualization to use memory overcommit using
    the following [example](../manifests/prep-hco.yaml):
 
-
 ```console
 $ oc patch --type=merge \
   -f <../manifests/prep-hco.yaml> \
   --patch-file <../manifests/prep-hco.yaml>
 ```
 
-## Verification
+### Verification
 
 1. Validate the deployment
    TBD
@@ -57,6 +72,8 @@ $ oc patch --type=merge \
 4. Validate OpenShift Virtualization configuration
    TBD
 
-## Additional Resources
+### Additional Resources
 
 * https://github.com/openshift-virtualization/wasp-agent
+* Free-Page Reporting
+* KSM
