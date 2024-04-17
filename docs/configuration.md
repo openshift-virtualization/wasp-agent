@@ -40,7 +40,9 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
    the following example:
 
 ```console
-$ oc patch --type=merge  -f [../manifests/prep-hco.yaml](../manifests/prep-hco.yaml) --patch-file [../manifests/prep-hco.yaml](../manifests/prep-hco.yaml)
+$ oc patch --type=merge \
+  -f <../manifests/prep-hco.yaml> \
+  --patch-file <../manifests/prep-hco.yaml>
 ```
 
 ## Verification
