@@ -81,6 +81,10 @@ $ oc patch --type=merge \
   --patch-file <../manifests/prep-hco.yaml>
 ```
 
+> [!NOTE]
+> After applying all configurations all `MachineConfigPool`
+> roll-outs have to complete before the feature is fully available.
+
 ### Verification
 
 1. Validate the deployment
