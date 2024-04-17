@@ -52,6 +52,9 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 4. Create `MachineConfig` to provision swap
 
 > [!IMPORTANT]
+> In order to have enough swap for the worst case scenario, it must
+> be ensured to have at least as much swap space provisioned as RAM
+> is being over-committed.
 > The amount of swap space to be provisioned on a node must
 > be calculated according to the following formula:
 >
