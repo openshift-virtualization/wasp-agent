@@ -16,6 +16,9 @@ others, for example:
 
 ## Configuring higher workload density with the wasp-agent
 
+[wasp-agent] is an component to enable an OpenShift cluster to assign
+SWAP resources to burstable VM workloads only.
+
 ### Prerequisites
 
 * `oc` is available
@@ -74,6 +77,6 @@ $ oc patch --type=merge \
 
 ### Additional Resources
 
-* https://github.com/openshift-virtualization/wasp-agent
-* Free-Page Reporting
-* KSM
+[wasp-agent]: https://github.com/openshift-virtualization/wasp-agent
+FPR: Free-Page Reporting
+KSM:
