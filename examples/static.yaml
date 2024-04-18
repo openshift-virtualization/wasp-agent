@@ -24,7 +24,7 @@ spec:
           - -c
           - "dd if=/dev/urandom of=/dev/shm/rnd bs=1M count=60 ; sleep inf"
         image: >-
-            quay.io/fdeutsch/wasp-operator-prototype:latest
+            quay.io/openshift-virtualization/wasp-agent:latest
         name: fedora
         resources:
           requests:

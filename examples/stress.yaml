@@ -33,7 +33,7 @@ spec:
           - -c
           - "sleep $(( RANDOM % 30 )) ; stress -v -m 1 --vm-bytes 1G --vm-hang 3"
         image: >-
-            quay.io/fdeutsch/wasp-operator-prototype:latest
+            quay.io/openshift-virtualization/wasp-agent:latest
         name: fedora
         resources:
           requests:
