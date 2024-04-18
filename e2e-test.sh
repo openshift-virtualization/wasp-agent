@@ -41,7 +41,7 @@ assert "bash to.sh check_nodes | grep -E '4999\\s+[0-9]+\\s+[0-9]+'"
 # FIXME this will urn a besteffort pod
 #n
 #c "Check if the container's memory.swap.max is configured properly"
-#assert "oc run check-has-swap-max --image=quay.io/fdeutsch/wasp-operator-prototype --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max | grep -v 0"
+#assert "oc run check-has-swap-max --image=quay.io/openshift-virtualization/wasp-agent --rm -it --command -- cat /sys/fs/cgroup/memory.swap.max | grep -v 0"
 
 n
 c "Run a workload to force swap utilization"

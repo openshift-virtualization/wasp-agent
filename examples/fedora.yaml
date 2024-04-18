@@ -23,7 +23,7 @@ spec:
         - sleep
         - "6000"
         image: >-
-            quay.io/fdeutsch/wasp-operator-prototype:latest
+            quay.io/openshift-virtualization/wasp-agent:latest
         name: fedora
         resources:
           requests:

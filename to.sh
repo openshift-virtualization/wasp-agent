@@ -1,4 +1,4 @@
-IMG_REPO=quay.io/fdeutsch/wasp-operator-prototype
+IMG_REPO=quay.io/openshift-virtualization/wasp-agent
 
 build() {
   podman -r build -t $IMG_REPO -f Containerfile .
