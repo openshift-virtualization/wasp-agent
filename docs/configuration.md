@@ -1,6 +1,6 @@
 # Configuring higher workload density
 
-You can configure a higher VM workload densityin your cluster
+You can configure a higher VM workload density in your cluster
 by over-committing memory resources (RAM).
 
 While over-committed memory can lead to a higher workload density, at
@@ -19,17 +19,20 @@ others, for example:
 [wasp-agent] is an component to enable an OpenShift cluster to assign
 SWAP resources to burstable VM workloads only.
 
+SWAP usage is supported on worker nodes only.
+
 ### Prerequisites
 
 * `oc` is available
 * Logged into cluster with `cluster-admin` role
 * A defined memory over-commit ratio. By default: 150%
+* A worker pool
 
 ### Procedure
 
 > [!NOTE]
 > The `wasp-agent` will deploy an OCI hook in order to enable
-> swap usage for containres on the node level.
+> swap usage for containers on the node level.
 > The low-level nature requires the `DaemonSet` to be privileged.
 
 1. Create a privileged service account:
