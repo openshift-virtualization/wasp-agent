@@ -13,6 +13,12 @@ tune_system_slice() {
   # Disable swap for system.slice
   _set 0 $FSROOT/sys/fs/cgroup/system.slice/memory.swap.max
 
+  # Disable swap for user.slice
+  _set 0 $FSROOT/sys/fs/cgroup/user.slice/memory.swap.max
+
+  # Disable swap for machine.slice
+  _set 0 $FSROOT/sys/fs/cgroup/machine.slice/memory.swap.max
+
   # Set latency target to protect the root slice from io trash
   MAJMIN=$(findmnt $FSROOT/ --output MAJ:MIN -n | sed "s/:.*/:0/")  # fixme can be manually provided
   echo "Using MAJMIN $MAJMIN"
