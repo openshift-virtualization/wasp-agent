@@ -18,13 +18,10 @@ spec:
       labels:
           name: wasp
     spec:
-      restartPolicy: Always
       serviceAccountName: wasp
-      serviceAccount: wasp
       hostPID: true
       hostUsers: true
-      terminationGracePeriodSeconds: 30
-      securityContext: {}
+      terminationGracePeriodSeconds: 5
       containers:
         - name: wasp-agent
           image: >-
@@ -33,8 +30,6 @@ spec:
           env:
           - name: "FSROOT"
             value: "/host"
-          - name: "SWAPPINESS"
-            value: "5"
           resources:
             requests:
               cpu: 100m
