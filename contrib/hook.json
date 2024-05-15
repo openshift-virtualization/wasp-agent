@@ -9,6 +9,6 @@
         }
     },
     "stages": [
-        "prestart"
+        "poststart"
     ]
 }
