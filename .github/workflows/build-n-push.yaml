@@ -10,7 +10,7 @@ env:
   DO_PUSH: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
 
 jobs:
-  build-and-push:
+  build-image:
     name: Build and push image
     runs-on: ubuntu-latest
 
@@ -26,10 +26,11 @@ jobs:
         containerfiles: |
           ./Containerfile
 
-    # Podman Login action (https://github.com/redhat-actions/podman-login) also be used to log in,
-    # in which case 'username' and 'password' can be omitted.
+  push-image-to-quay:
+    needs: build-image
+    if: env.DO_PUSH == 'true'
+    steps:
     - name: Push To quay.io
-      if: env.DO_PUSH == 'true'
       id: push-to-quay
       uses: redhat-actions/push-to-registry@v2
       with:
@@ -40,5 +41,4 @@ jobs:
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Print image url
-      if: env.DO_PUSH == 'true'
       run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
