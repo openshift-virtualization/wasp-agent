@@ -1,8 +1,16 @@
 name: Build and Push Image
-on: [ push ]
+on:
+  push:
+    branches: ['main']
+    tags: ['v*']
+  pull_request:
+    branches: ['main']
+
+env:
+  DO_PUSH: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
 
 jobs:
-  build:
+  build-and-push:
     name: Build and push image
     runs-on: ubuntu-latest
 
@@ -21,6 +29,7 @@ jobs:
     # Podman Login action (https://github.com/redhat-actions/podman-login) also be used to log in,
     # in which case 'username' and 'password' can be omitted.
     - name: Push To quay.io
+      if: env.DO_PUSH == 'true'
       id: push-to-quay
       uses: redhat-actions/push-to-registry@v2
       with:
