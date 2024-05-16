@@ -1,20 +1,8 @@
 apiVersion: hco.kubevirt.io/v1beta1
 kind: HyperConverged
 metadata:
-metadata:
   name: kubevirt-hyperconverged
   namespace: openshift-cnv
-  annotations:
-    kubevirt.kubevirt.io/jsonpatch: |-
-      [
-        {
-          "op": "add",
-          "path": "/spec/configuration/developerConfiguration/memoryOvercommit",
-          "value": 200
-        },
-        {
-          "op": "add",
-          "path": "/spec/configuration/developerConfiguration/useEmulation",
-          "value": true
-        }
-      ]
+spec:
+  higherWorkloadDensity:
+    memoryOvercommitPercentage: 150
