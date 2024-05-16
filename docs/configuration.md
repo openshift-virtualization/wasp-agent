@@ -16,7 +16,7 @@ others, for example:
 
 ## Configuring higher workload density with the wasp-agent
 
-[wasp-agent] is an component to enable an OpenShift cluster to assign
+[wasp-agent] is a component to enable an OpenShift cluster to assign
 SWAP resources to burstable VM workloads only.
 
 SWAP usage is supported on worker nodes only.
@@ -52,7 +52,7 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
    Create a `KubeletConfiguration` according to the following
    [example](../manifests/kubelet-configuration-with-swap.yaml).
 
-4. Create `MachineConfig` to provision swap
+4. Create `MachineConfig` to provision swap according to the following [example](../manifests/machineconfig-add-swap.yaml)
 
 > [!IMPORTANT]
 > In order to have enough swap for the worst case scenario, it must
