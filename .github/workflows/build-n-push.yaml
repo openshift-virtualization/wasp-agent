@@ -7,7 +7,7 @@ on:
     branches: ['main']
 
 jobs:
-  build-image:
+  build-and-push:
     name: Build image
     runs-on: ubuntu-latest
 
@@ -23,26 +23,17 @@ jobs:
         containerfiles: |
           ./Containerfile
 
-    outputs:
-      image: ${{ steps.build-image.outputs.image }}
-      tags: ${{ steps.build-image.outputs.tags }}
-
-  push-image-to-quay:
-    name: Push image to quay.io
-    needs: build-image
-    if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
-
-    runs-on: ubuntu-latest
-    steps:
     - name: Push To quay.io
+      if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
       id: push-to-quay
       uses: redhat-actions/push-to-registry@v2
       with:
-        image: ${{ needs.build-image.outputs.image }}
-        tags: ${{ needs.build-image.outputs.tags }}
+        image: ${{ steps.build-and-push.outputs.image }}
+        tags: ${{ steps.build-and-push.outputs.tags }}
         registry: quay.io/openshift-virtualization
         username: openshift-virtualization+wasp_agent_gh_workflow
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Print image url
+      if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
       run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
