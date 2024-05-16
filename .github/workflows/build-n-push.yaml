@@ -11,7 +11,7 @@ env:
 
 jobs:
   build-image:
-    name: Build and push image
+    name: Build image
     runs-on: ubuntu-latest
 
     steps:
@@ -27,8 +27,11 @@ jobs:
           ./Containerfile
 
   push-image-to-quay:
+    name: Push image to quay.io
     needs: build-image
     if: env.DO_PUSH == 'true'
+
+    runs-on: ubuntu-latest
     steps:
     - name: Push To quay.io
       id: push-to-quay
