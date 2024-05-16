@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-push:
-    name: Build image
+    name: Build and conditionally push image
     runs-on: ubuntu-latest
 
     steps:
@@ -28,8 +28,8 @@ jobs:
       id: push-to-quay
       uses: redhat-actions/push-to-registry@v2
       with:
-        image: ${{ steps.build-and-push.outputs.image }}
-        tags: ${{ steps.build-and-push.outputs.tags }}
+        image: ${{ steps.build-image.outputs.image }}
+        tags: ${{ steps.build-image.outputs.tags }}
         registry: quay.io/openshift-virtualization
         username: openshift-virtualization+wasp_agent_gh_workflow
         password: ${{ secrets.REGISTRY_PASSWORD }}
