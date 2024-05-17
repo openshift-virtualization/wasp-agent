@@ -4,7 +4,7 @@ metadata:
   creationTimestamp: null
   labels:
     app: fedora
-  name: fedora
+  name: virt-launcher-fedora
 spec:
   replicas: 1
   selector:
