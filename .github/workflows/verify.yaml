@@ -20,5 +20,8 @@ jobs:
 
   lint-bash:
     name: Lint bash scripts
+    runs-on: ubuntu-latest
+
+    steps:
       - uses: actions/checkout@v4
       - run: bash -n contrib/*
