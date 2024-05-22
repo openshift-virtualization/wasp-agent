@@ -39,7 +39,7 @@ SWAP usage is supported on worker nodes only.
 
 ```console
 $ oc adm new-project wasp
-$ oc create sa -n waspi wasp
+$ oc create sa -n wasp wasp
 $ oc adm policy add-cluster-role-to-user cluster-admin -z wasp
 $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
