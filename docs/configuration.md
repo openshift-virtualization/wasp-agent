@@ -91,7 +91,7 @@ $ oc patch --type=merge \
 > After applying all configurations all `MachineConfigPool`
 > roll-outs have to complete before the feature is fully available.
 >
->     oc wait mcp worker --for condition=Updated=True
+>     $ oc wait mcp worker --for condition=Updated=True
 >
 
 ### Verification
