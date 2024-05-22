@@ -98,7 +98,7 @@ $ oc patch --type=merge \
 
 1. Validate the deployment
    TBD
-2. Validate correctly provisioned swap:
+2. Validate correctly provisioned swap by running:
 
        $ oc get nodes -l node-role.kubernetes.io/worker
        # Select a node from the provided list
@@ -113,6 +113,15 @@ $ oc patch --type=merge \
 
 
 3. Validate OpenShift Virtualization memory overcommitment configuration
+   by running:
+
+       $ oc get -n openshift-cnv HyperConverged kubevirt-hyperconverged -o jsonpath="{.spec.higherWorkloadDensity.memoryOvercommitPercentage}"
+       150
+
+    The returned value (in this case `150`) should match the value you
+    have configured earlier on.
+
+4. Validate Virtual Machine memory overcommitment
    TBD
 
 ### Additional Resources
