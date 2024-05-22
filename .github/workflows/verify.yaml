@@ -1,4 +1,4 @@
-name: Verify
+name: lint
 
 on:
   push:
@@ -8,17 +8,17 @@ on:
     branches: ['main']
 
 jobs:
-  lint-yaml:
+  yaml:
     name: Lint yamls
     runs-on: ubuntu-latest
 
     steps:
       - name: Scan repo with kube-linter
-        uses: stackrox/kube-linter-action@v1.0.4
+        uses: stackrox/kube-linter-action@v1
         with:
           directory: manifests
 
-  lint-bash:
+  bash:
     name: Lint bash scripts
     runs-on: ubuntu-latest
 
