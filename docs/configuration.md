@@ -61,12 +61,13 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 > The amount of swap space to be provisioned on a node must
 > be calculated according to the following formula:
 >
->     NODE_SWAP_SPACE = NODE_RAM * MEMORY_OVER_COMMIT_RATIO
+>     NODE_SWAP_SPACE = NODE_RAM * (MEMORY_OVER_COMMIT_PERCENT / 100% - 1)
 >
 > Example:
 >
->     NODE_SWAP_SPACE = 16 GB * 150%
->                     = 16 GB * 0.5
+>     NODE_SWAP_SPACE = 16 GB * (150% / 100% - 1)
+>                     = 16 GB * (1.5 - 1)
+>                     = 16 GB * (0.5)
 >                     =  8 GB
 
    Create a `MachineConfig` according to the following
