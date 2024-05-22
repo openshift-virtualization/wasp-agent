@@ -98,16 +98,21 @@ $ oc patch --type=merge \
 
 1. Validate the deployment
    TBD
-2. Validate correctly configured Kubelet
-   TBD
-3. Validate correctly provisioned swap:
+2. Validate correctly provisioned swap:
 
        $ oc get nodes -l node-role.kubernetes.io/worker
        # Select a node from the provided list
 
        $ oc debug node/<selected-node> -- free -m
 
-4. Validate OpenShift Virtualization configuration
+   Should show an amoutn larger than zero for swap, similar to:
+
+                      total        used        free      shared  buff/cache   available
+       Mem:           31846       23155        1044        6014       14483        8690
+       Swap:           8191        2337        5854
+
+
+3. Validate OpenShift Virtualization memory overcommitment configuration
    TBD
 
 ### Additional Resources
