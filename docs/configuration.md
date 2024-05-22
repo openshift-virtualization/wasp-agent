@@ -77,12 +77,14 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
    [example](../manifests/prometheus-rules.yaml).
 
 6. Configure OpenShift Virtualization to use memory overcommit using
-   the following [example](../manifests/prep-hco.yaml):
+
+   a. the OpenShift Console
+   b. the following [HCO example](../manifests/hco-set-memory-overcommit.yaml):
 
 ```console
 $ oc patch --type=merge \
-  -f <../manifests/prep-hco.yaml> \
-  --patch-file <../manifests/prep-hco.yaml>
+  -f <../manifests/hco-set-memory-overcommit.yaml> \
+  --patch-file <../manifests/hco-set-memory-overcommit.yaml>
 ```
 
 > [!NOTE]
