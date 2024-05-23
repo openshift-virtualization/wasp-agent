@@ -1,4 +1,4 @@
-FROM fedora
+FROM quay.io/fedora/fedora
 WORKDIR /app
 
 RUN sudo dnf install -y jq units stress stress-ng procps-ng
