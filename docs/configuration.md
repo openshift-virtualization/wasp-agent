@@ -39,7 +39,7 @@ SWAP usage is supported on worker nodes only.
 
 ```console
 $ oc adm new-project wasp
-$ oc create sa -n waspi wasp
+$ oc create sa -n wasp wasp
 $ oc adm policy add-cluster-role-to-user cluster-admin -z wasp
 $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
@@ -61,12 +61,13 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 > The amount of swap space to be provisioned on a node must
 > be calculated according to the following formula:
 >
->     NODE_SWAP_SPACE = NODE_RAM * MEMORY_OVER_COMMIT_RATIO
+>     NODE_SWAP_SPACE = NODE_RAM * (MEMORY_OVER_COMMIT_PERCENT / 100% - 1)
 >
 > Example:
 >
->     NODE_SWAP_SPACE = 16 GB * 150%
->                     = 16 GB * 0.5
+>     NODE_SWAP_SPACE = 16 GB * (150% / 100% - 1)
+>                     = 16 GB * (1.5 - 1)
+>                     = 16 GB * (0.5)
 >                     =  8 GB
 
    Create a `MachineConfig` according to the following
@@ -76,35 +77,51 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
    [example](../manifests/prometheus-rules.yaml).
 
 6. Configure OpenShift Virtualization to use memory overcommit using
-   the following [example](../manifests/prep-hco.yaml):
+
+   a. the OpenShift Console
+   b. the following [HCO example](../manifests/hco-set-memory-overcommit.yaml):
 
 ```console
 $ oc patch --type=merge \
-  -f <../manifests/prep-hco.yaml> \
-  --patch-file <../manifests/prep-hco.yaml>
+  -f <../manifests/hco-set-memory-overcommit.yaml> \
+  --patch-file <../manifests/hco-set-memory-overcommit.yaml>
 ```
 
 > [!NOTE]
 > After applying all configurations all `MachineConfigPool`
 > roll-outs have to complete before the feature is fully available.
 >
->     oc wait mcp worker --for condition=Updated=True
+>     $ oc wait mcp worker --for condition=Updated=True
 >
 
 ### Verification
 
 1. Validate the deployment
    TBD
-2. Validate correctly configured Kubelet
-   TBD
-3. Validate correctly provisioned swap:
+2. Validate correctly provisioned swap by running:
 
        $ oc get nodes -l node-role.kubernetes.io/worker
        # Select a node from the provided list
 
        $ oc debug node/<selected-node> -- free -m
 
-4. Validate OpenShift Virtualization configuration
+   Should show an amoutn larger than zero for swap, similar to:
+
+                      total        used        free      shared  buff/cache   available
+       Mem:           31846       23155        1044        6014       14483        8690
+       Swap:           8191        2337        5854
+
+
+3. Validate OpenShift Virtualization memory overcommitment configuration
+   by running:
+
+       $ oc get -n openshift-cnv HyperConverged kubevirt-hyperconverged -o jsonpath="{.spec.higherWorkloadDensity.memoryOvercommitPercentage}"
+       150
+
+    The returned value (in this case `150`) should match the value you
+    have configured earlier on.
+
+4. Validate Virtual Machine memory overcommitment
    TBD
 
 ### Additional Resources
