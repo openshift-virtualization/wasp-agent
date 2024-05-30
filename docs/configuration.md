@@ -70,9 +70,6 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 >                     = 16 GB * (0.5)
 >                     =  8 GB
 
-   Create a `MachineConfig` according to the following
-   [example](../manifests/machineconfig-add-swap.yaml).
-
 5. Deploy alerting rules according to the following
    [example](../manifests/prometheus-rules.yaml).
 
