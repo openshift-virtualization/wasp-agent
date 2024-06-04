@@ -1,6 +1,6 @@
 # Out-of-tree SWAP with WASP
 
-WASP can be usde in order to grant SWAP to certain containers using
+WASP can be used in order to grant SWAP to certain containers using
 an out-of-(kubernetes)-tree mechanism based on an OCI hook.
 
 The design can be found in https://github.com/openshift/enhancements/pull/1630
