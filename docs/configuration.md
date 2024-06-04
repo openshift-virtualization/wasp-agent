@@ -110,7 +110,7 @@ $ oc patch --type=merge \
 
 1. Validate the deployment
 
-       $ oc rollout status ds wasp-agent -n wasp
+       $ oc rollout status ds wasp-agent -n wasp --timeout 2m
        daemon set "wasp-agent" successfully rolled out
 
 2. Validate correctly provisioned swap by running:
@@ -137,7 +137,9 @@ $ oc patch --type=merge \
     have configured earlier on.
 
 4. Validate Virtual Machine memory overcommitment
-   TBD
+   Create a VM with as much memory as the node has. Without memory
+   overcommit the VM will not be scheduled. Only with memory
+   overcommit the VM will be scheduled and can run.
 
 ### Additional Resources
 
