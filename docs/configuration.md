@@ -41,7 +41,7 @@ SWAP usage is supported on worker nodes only.
 $ oc adm new-project wasp
 $ oc project wasp
 $ oc create sa -n wasp wasp
-$ oc adm policy add-cluster-role-to-user cluster-admin -z wasp
+$ oc adm policy add-cluster-role-to-user cluster-admin -n wasp -z wasp
 $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
 
@@ -52,6 +52,13 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 3. Configure `Kubelet` to permit swap
    Create a `KubeletConfiguration` according to the following
    [example](../manifests/kubelet-configuration-with-swap.yaml).
+
+> [!NOTE]
+> For Red Hat release please replace the container image URL in the example with the following:
+> ```console
+> registry.rdhat.io/container-native-virtualization/wasp-agent-rhel9:latest
+> ```
+
 
 4. Create `MachineConfig` to provision swap according to the following [example](../manifests/machineconfig-add-swap.yaml)
 
@@ -102,7 +109,10 @@ $ oc patch --type=merge \
 ### Verification
 
 1. Validate the deployment
-   TBD
+
+       $ oc rollout status ds wasp-agent -n wasp
+       daemon set "wasp-agent" successfully rolled out
+
 2. Validate correctly provisioned swap by running:
 
        $ oc get nodes -l node-role.kubernetes.io/worker
