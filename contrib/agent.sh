@@ -3,29 +3,28 @@
 # Expected to be set by DS
 FSROOT=${FSROOT:-/host}
 
-_set() { echo "Setting $1 > $2" ; echo "$1" > "$2" ; }
-
 tune_system_slice() {
-  [[ -n "$SWAPPINESS" ]] && { _set "$SWAPPINESS" "$FSROOT/proc/sys/vm/swappiness"; }
+  [[ -n "$SWAPPINESS" ]] && ( set -x ; sysctl -w vm.swappiness=$SWAPPINESS ; )
 
+  #
   echo "Tuning system.slice"
-
-  # Disable swap for system.slice
-  _set 0 $FSROOT/sys/fs/cgroup/system.slice/memory.swap.max
-
-  # Set latency target to protect the root slice from io trash
+  #
+  # Disable swap for system.slice and
+  # set latency target to protect the root slice from io trash
   MAJMIN=$(findmnt $FSROOT/ --output MAJ:MIN -n | sed "s/:.*/:0/")  # fixme can be manually provided
   echo "Using MAJMIN $MAJMIN"
-  _set "$MAJMIN target=50" $FSROOT/sys/fs/cgroup/system.slice/io.latency
+  ( se -x ; systemctl set-property --runtime system.slice MemorySwapMax=0 IODeviceLatencyTargetSec=$MAJMIN 50ms ; )
 
+  #
   echo "Tune kubepods.slice"
+  #
   # Gi is pow2
   {
     MEM_MAX=$(< $FSROOT/sys/fs/cgroup/kubepods.slice/memory.max)
 
     # We need to get this from kubelet.conf
     THRESHOLD_BYTES=$(numfmt --from=auto <<<100M)
-    KUBELET_SOFT_MEM=$(cat $FSROOT/etc/kubernetes/kubelet.conf | jq -r ".evictionSoft[\"memory.available\"]")
+    KUBELET_SOFT_MEM=$(jq -r ".evictionSoft[\"memory.available\"]" < $FSROOT/etc/kubernetes/kubelet.conf)
     if [[ "$KUBELET_SOFT_MEM" != "null" ]];
     then
       THRESHOLD_BYTES=$(numfmt --from=auto <<<$KUBELET_SOFT_MEM)
@@ -35,12 +34,12 @@ tune_system_slice() {
     fi
 
     MEM_HIGH=$(( MEM_MAX - THRESHOLD_BYTES ))
-    _set $MEM_HIGH $FSROOT/sys/fs/cgroup/kubepods.slice/memory.high
+    ( set -x ; systemctl set-property --runtime kubepods.slice MemoryHigh=$MEM_HIGH ; )
   }
 }
 
 install_oci_hook() {
-  # FIXME we shoud set noswap for all cgroups, not just leaves, just to be sure
+  # FIXME we shoud set noswap for all cgroups, not just leaves, just to be sure - but how?
   echo "installing hook"
 
   cp -v hook.sh $FSROOT/opt/oci-hook-swap.sh
