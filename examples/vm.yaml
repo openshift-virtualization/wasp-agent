@@ -1,37 +1,46 @@
-apiVersion: kubevirt.io/v1
-kind: VirtualMachine
+apiVersion: pool.kubevirt.io/v1alpha1
+kind: VirtualMachinePool
 metadata:
-  generateName: fedora-
+  name: fedora
 spec:
-  running: true
-  template:
+  replicas: 3
+  selector:
+    matchLabels:
+      kubevirt.io/vmpool: vm-pool-fedora
+  virtualMachineTemplate:
+    metadata:
+      labels:
+        kubevirt.io/vmpool: vm-pool-fedora
     spec:
-      architecture: amd64
-      domain:
-        devices:
-          disks:
-            - disk:
-                bus: virtio
+      running: true
+      template:
+        spec:
+          architecture: amd64
+          domain:
+            devices:
+              disks:
+                - disk:
+                    bus: virtio
+                  name: containerdisk
+                - disk:
+                    bus: virtio
+                  name: cloudinitdisk
+            memory:
+              guest: 4G
+            resources:   # Uncomment if you want to do manual overcommit
+              limits:
+                cpu: "0.02"
+#              requests:
+#                memory: 500Mi
+          terminationGracePeriodSeconds: 0
+          volumes:
+            - containerDisk:
+                image: 'quay.io/containerdisks/fedora:39'
               name: containerdisk
-            - disk:
-                bus: virtio
+            - cloudInitNoCloud:
+                userData: |
+                  #cloud-config
+                  password: fedora
+                  chpasswd: { expire: False }
               name: cloudinitdisk
-        memory:
-          guest: 4G
-        resources:   # Uncomment if you want to do manual overcommit
-          limits:
-            cpu: 0.02
-          requests:
-            memory: 500Mi
-      terminationGracePeriodSeconds: 0
-      volumes:
-        - containerDisk:
-            image: 'quay.io/containerdisks/fedora:39'
-          name: containerdisk
-        - cloudInitNoCloud:
-            userData: |
-              #cloud-config
-              password: fedora
-              chpasswd: { expire: False }
-          name: cloudinitdisk
 status: {}
