@@ -17,6 +17,7 @@ qoc() { oc $@ > /dev/null 2>&1; }
 apply() {
   _oc apply -f manifests/ds.yaml
   _oc apply -f manifests/kubelet-configuration-with-swap.yaml
+  wait_for_mcp
   _oc apply -f manifests/machineconfig-add-swap.yaml
   _oc apply -f manifests/prometheus-rules.yaml
   qoc get namespace openshift-cnv && _oc patch --type=merge  -f manifests/hco-set-memory-overcommit.yaml --patch-file manifests/hco-set-memory-overcommit.yaml || i "No CNV, No HCO patch"
@@ -30,7 +31,7 @@ deploy() {
   _oc project $NS
   qoc get sa -n $NS $SA || {
     _oc create sa -n $NS $SA
-    _oc adm policy add-cluster-role-to-user cluster-admin -z $SA
+    _oc adm policy add-cluster-role-to-user cluster-admin -n $NS -z $SA
     _oc adm policy add-scc-to-user -n $NS privileged -z $SA
   }
   apply
