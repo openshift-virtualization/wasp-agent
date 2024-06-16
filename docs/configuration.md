@@ -35,6 +35,12 @@ SWAP usage is supported on worker nodes only.
 > swap usage for containers on the node level.
 > The low-level nature requires the `DaemonSet` to be privileged.
 
+> [!NOTE]
+> For Red Hat release please replace the container image URL in the example with the following:
+> ```console
+> registry.redhat.io/container-native-virtualization/wasp-agent-rhel9:latest
+> ```
+
 1. Create a privileged service account:
 
 ```console
@@ -45,7 +51,7 @@ $ oc adm policy add-cluster-role-to-user cluster-admin -n wasp -z wasp
 $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
 
-2. Deploy `wasp-agent`
+2. Deploy `wasp-agent`.
    Create a `DaemonSet` according to the following
    [example](../manifests/ds.yaml).
 
@@ -53,14 +59,13 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
    Create a `KubeletConfiguration` according to the following
    [example](../manifests/kubelet-configuration-with-swap.yaml).
 
-> [!NOTE]
-> For Red Hat release please replace the container image URL in the example with the following:
-> ```console
-> registry.rdhat.io/container-native-virtualization/wasp-agent-rhel9:latest
-> ```
+4. Wait for the worker nodes to finish syncing before proceeding to the next step.
+   you can use the following command:
+   ```console
+   $ oc wait mcp worker --for condition=Updated=True
+   ```
 
-
-4. Create `MachineConfig` to provision swap according to the following [example](../manifests/machineconfig-add-swap.yaml)
+5. Create `MachineConfig` to provision swap according to the following [example](../manifests/machineconfig-add-swap.yaml)
 
 > [!CAUTION]
 > All worker nodes in a cluster are expected to have the same
@@ -85,10 +90,10 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 >                     = 16 GB * (0.5)
 >                     =  8 GB
 
-5. Deploy alerting rules according to the following
+6. Deploy alerting rules according to the following
    [example](../manifests/prometheus-rules.yaml).
 
-6. Configure OpenShift Virtualization to use memory overcommit using
+7. Configure OpenShift Virtualization to use memory overcommit using
 
    a. the OpenShift Console
    b. the following [HCO example](../manifests/hco-set-memory-overcommit.yaml):
