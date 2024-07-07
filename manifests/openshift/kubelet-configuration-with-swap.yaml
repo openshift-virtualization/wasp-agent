@@ -1,0 +1,12 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: KubeletConfig
+metadata:
+  name: custom-config
+spec:
+  machineConfigPoolSelector:
+    matchLabels:
+      pools.operator.machineconfiguration.openshift.io/worker: ''  # MCP
+      #machine.openshift.io/cluster-api-machine-role: worker # machine
+      #node-role.kubernetes.io/worker: '' # node
+  kubeletConfig:
+    failSwapOn: false
