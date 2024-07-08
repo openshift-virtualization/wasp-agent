@@ -11,9 +11,9 @@ tune_system_slice() {
   #
   # Disable swap for system.slice and
   # set latency target to protect the root slice from io trash
-  MAJMIN=$(findmnt $FSROOT/ --output MAJ:MIN -n | sed "s/:.*/:0/")  # fixme can be manually provided
-  echo "Using MAJMIN $MAJMIN"
-  ( se -x ; systemctl set-property --runtime system.slice MemorySwapMax=0 IODeviceLatencyTargetSec=$MAJMIN 50ms ; )
+  SOURCE=$(findmnt / -no SOURCE)  # fixme can be manually provided
+  echo "Using SOURCE $SOURCE"
+  ( se -x ; systemctl set-property --runtime system.slice MemorySwapMax=0 IODeviceLatencyTargetSec="$SOURCE 50ms" ; )
 
   #
   echo "Tune kubepods.slice"
