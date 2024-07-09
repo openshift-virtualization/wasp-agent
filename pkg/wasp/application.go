@@ -21,6 +21,8 @@ package wasp
 import (
 	"context"
 	"flag"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/tools/cache"
@@ -52,6 +54,8 @@ type WaspApp struct {
 func Execute() {
 	var err error
 	flag.Parse()
+	setOCIHook()
+
 	var app = WaspApp{}
 	memoryOverCommitmentThreshold := os.Getenv("MEMORY_OVER_COMMITMENT_THRESHOLD")
 	maxAverageSwapInPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND")
@@ -149,4 +153,45 @@ func (waspapp *WaspApp) Run(stop <-chan struct{}) {
 	}()
 	<-waspapp.ctx.Done()
 
+}
+
+func setOCIHook() {
+	err := moveFile("/app/OCI-hook/hook.sh", "/host/opt/oci-hook-swap.sh")
+	if err != nil {
+		klog.Warningf(err.Error())
+		return
+	}
+	err = moveFile("/app/OCI-hook/swap-for-burstable.json", "/host/run/containers/oci/hooks.d/swap-for-burstable.json")
+	if err != nil {
+		klog.Warningf(err.Error())
+	}
+}
+
+func moveFile(sourcePath, destPath string) error {
+	inputFile, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("Couldn't open source file: %v", err)
+	}
+	defer inputFile.Close()
+
+	outputFile, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("Couldn't open dest file: %v", err)
+	}
+	defer outputFile.Close()
+
+	_, err = io.Copy(outputFile, inputFile)
+	if err != nil {
+		return fmt.Errorf("Couldn't copy to dest from source: %v", err)
+	}
+
+	inputFile.Close()
+
+	// Set file permissions to make it executable
+	err = os.Chmod(destPath, 0755)
+	if err != nil {
+		return fmt.Errorf("Couldn't set file permissions: %v", err)
+	}
+
+	return nil
 }
