@@ -73,8 +73,8 @@ func NewEvictionController(waspCli client.WaspClient,
 
 func (ctrl *EvictionController) Run(ctx context.Context) {
 	defer utilruntime.HandleCrash()
-	log.Log.Infof("Starting ARQ controller")
-	defer log.Log.Infof("Shutting ARQ Controller")
+	log.Log.Infof("Starting eviction controller")
+	defer log.Log.Infof("Shutting eviction Controller")
 
 	go wait.Until(ctrl.handleMemorySwapEviction, ctrl.resyncPeriod, ctrl.stop)
 	go wait.Until(ctrl.statsCollector.GatherStats, metav1.Duration{Duration: 1 * time.Second}.Duration, ctrl.stop)
