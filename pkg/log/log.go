@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -317,108 +316,4 @@ func (l FilteredLogger) Critical(msg string) {
 
 func (l FilteredLogger) Criticalf(msg string, args ...interface{}) {
 	l.Level(FATAL).msgf(msg, args...)
-}
-
-func LogLibvirtLogLine(logger *FilteredLogger, line string) {
-
-	if len(strings.TrimSpace(line)) == 0 {
-		return
-	}
-
-	fragments := strings.SplitN(line, ": ", 5)
-	if len(fragments) < 4 {
-		now := time.Now()
-		logger.logger.Log(
-			"level", "info",
-			"timestamp", now.Format(logTimestampFormat),
-			"component", logger.component,
-			"subcomponent", "libvirt",
-			"msg", line,
-		)
-		return
-	}
-	severity := strings.ToLower(strings.TrimSpace(fragments[2]))
-
-	if severity == "debug" {
-		severity = "info"
-	}
-
-	t, err := time.Parse(libvirtTimestampFormat, strings.TrimSpace(fragments[0]))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	thread := strings.TrimSpace(fragments[1])
-	pos := strings.TrimSpace(fragments[3])
-	msg := strings.TrimSpace(fragments[4])
-
-	//TODO: implement proper behavior for unsupported GA commands
-	// by either considering the GA version as unsupported or just don't
-	// send commands which not supported
-	if strings.Contains(msg, "unable to execute QEMU agent command") {
-		if logger.verbosityLevel < 4 {
-			return
-		}
-
-		severity = LogLevelNames[WARNING]
-	}
-
-	// check if we really got a position
-	isPos := false
-	if split := strings.Split(pos, ":"); len(split) == 2 {
-		if _, err := strconv.Atoi(split[1]); err == nil {
-			isPos = true
-		}
-	}
-
-	if !isPos {
-		msg = strings.TrimSpace(fragments[3] + ": " + fragments[4])
-		logger.logger.Log(
-			"level", severity,
-			"timestamp", t.Format(logTimestampFormat),
-			"component", logger.component,
-			"subcomponent", "libvirt",
-			"thread", thread,
-			"msg", msg,
-		)
-	} else {
-		logger.logger.Log(
-			"level", severity,
-			"timestamp", t.Format(logTimestampFormat),
-			"pos", pos,
-			"component", logger.component,
-			"subcomponent", "libvirt",
-			"thread", thread,
-			"msg", msg,
-		)
-	}
-}
-
-var qemuLogLines = ""
-
-func LogQemuLogLine(logger *FilteredLogger, line string) {
-
-	if len(strings.TrimSpace(line)) == 0 {
-		return
-	}
-
-	// Concat break lines to have full command in one log message
-	if strings.HasSuffix(line, "\\") {
-		qemuLogLines += line
-		return
-	}
-
-	if len(qemuLogLines) > 0 {
-		line = qemuLogLines + line
-		qemuLogLines = ""
-	}
-
-	now := time.Now()
-	logger.logger.Log(
-		"level", "info",
-		"timestamp", now.Format(logTimestampFormat),
-		"component", logger.component,
-		"subcomponent", "qemu",
-		"msg", line,
-	)
 }
