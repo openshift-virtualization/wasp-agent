@@ -105,7 +105,7 @@ func Execute() {
 	log.Log.Infof("MEMORY_OVER_COMMITMENT_THRESHOLD:%v "+
 		"MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND:%v "+
 		"MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND:%v "+
-		"INTERVAL:%v "+
+		"AVERAGE_WINDOW_SIZE_SECONDS:%v "+
 		"nodeName: %v "+
 		"ns: %v "+
 		"fsRoot: %v",
