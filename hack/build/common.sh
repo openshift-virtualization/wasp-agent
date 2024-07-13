@@ -32,7 +32,6 @@ determine_wasp_bin() {
 WASP_DIR="$(cd $(dirname $0)/../../ && pwd -P)"
 
 
-WASP_GO_PACKAGE=kubevirt.io/costume-quota-operator
 BIN_DIR=${WASP_DIR}/bin
 OUT_DIR=${WASP_DIR}/_out
 CMD_OUT_DIR=${WASP_DIR}/cmd
@@ -40,8 +39,6 @@ TESTS_OUT_DIR=${OUT_DIR}/tests
 BUILD_DIR=${WASP_DIR}/hack/build
 MANIFEST_TEMPLATE_DIR=${WASP_DIR}/manifests/templates
 MANIFEST_GENERATED_DIR=${WASP_DIR}/manifests/generated
-SOURCE_DIRS="pkg tests tools"
-APIDOCS_OUT_DIR=${OUT_DIR}/apidocs
 CACHE_DIR=${OUT_DIR}/gocache
 VENDOR_DIR=${WASP_DIR}/vendor
 ARCHITECTURE="${BUILD_ARCH:-$(uname -m)}"
