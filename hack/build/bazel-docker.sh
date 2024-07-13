@@ -21,7 +21,6 @@ source "${script_dir}"/config.sh
 
 mkdir -p "${WASP_DIR}/_out"
 
-BUILDER_SPEC="${BUILD_DIR}/docker/builder"
 BUILDER_VOLUME="kubevirt-wasp-volume"
 BAZEL_BUILDER_SERVER="${BUILDER_VOLUME}-bazel-server"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
