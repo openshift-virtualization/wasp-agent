@@ -32,13 +32,6 @@ DISABLE_SECCOMP=${DISABLE_SECCOMP:-}
 SYNC_OUT=${SYNC_OUT:-true}
 SYNC_VENDOR=${SYNC_VENDOR:-true}
 
-# Be less verbose with bazel
-if [ -n "${TRAVIS_JOB_ID}" ]; then
-    cat >.bazelrc <<EOF
-common --noshow_progress --noshow_loading_progress
-EOF
-fi
-
 # Create the persistent docker volume
 if [ -z "$(${WASP_CRI} volume list | grep ${BUILDER_VOLUME})" ]; then
     ${WASP_CRI} volume create ${BUILDER_VOLUME}
