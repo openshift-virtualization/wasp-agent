@@ -21,8 +21,6 @@ source ./cluster-sync/${WASP_SYNC_PROVIDER}/provider.sh
 WASP_NAMESPACE=${WASP_NAMESPACE:-wasp}
 WASP_INSTALL_TIMEOUT=${WASP_INSTALL_TIMEOUT:-120}
 WASP_AVAILABLE_TIMEOUT=${WASP_AVAILABLE_TIMEOUT:-600}
-WASP_PODS_UPDATE_TIMEOUT=${WASP_PODS_UPDATE_TIMEOUT:-480}
-WASP_UPGRADE_RETRY_COUNT=${WASP_UPGRADE_RETRY_COUNT:-60}
 
 # Set controller verbosity to 3 for functional tests.
 export VERBOSITY=3
@@ -56,20 +54,6 @@ fi
 DOCKER_PREFIX=$MANIFEST_REGISTRY PULL_POLICY=$PULL_POLICY make manifests
 DOCKER_PREFIX=$DOCKER_PREFIX make push
 
-
-function check_structural_schema {
-  for crd in "$@"; do
-    status=$(_kubectl get crd $crd -o jsonpath={.status.conditions[?\(@.type==\"NonStructuralSchema\"\)].status})
-    if [ "$status" == "True" ]; then
-      echo "ERROR CRD $crd is not a structural schema!, please fix"
-      _kubectl get crd $crd -o yaml
-      exit 1
-    fi
-    echo "CRD $crd is a StructuralSchema"
-  done
-}
-
-
 function check_wasp_daemonset_pods() {
   # Get the number of desired pods and available pods
   desired_pods=$(kubectl get daemonset wasp-agent -n "$WASP_NAMESPACE" -o jsonpath='{.status.desiredNumberScheduled}')
@@ -88,7 +72,7 @@ function check_wasp_daemonset_pods() {
 }
 
 function wait_wasp_available {
-  retry_count=120
+  retry_count="${WASP_INSTALL_TIMEOUT}"
   echo "Waiting for DaemonSet wasp-agent in namespace '$WASP_NAMESPACE' to be ready..."
 
   # Loop for the specified number of retries
@@ -105,12 +89,7 @@ function wait_wasp_available {
     echo "Warning: wasp is not ready!"
 }
 
-
-OLD_WASP_VER_PODS="./_out/tests/old_wasp_ver_pods"
-NEW_WASP_VER_PODS="./_out/tests/new_wasp_ver_pods"
-
 mkdir -p ./_out/tests
-rm -f $OLD_WASP_VER_PODS $NEW_WASP_VER_PODS
 
 # Install WASP
 install_wasp
