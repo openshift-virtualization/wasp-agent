@@ -2,6 +2,7 @@ package operator
 
 import (
 	"fmt"
+	utils2 "github.com/openshift-virtualization/wasp-agent/pkg/util"
 	secv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -11,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/resources"
-	utils2 "kubevirt.io/wasp/pkg/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

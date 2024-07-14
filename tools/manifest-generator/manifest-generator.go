@@ -15,10 +15,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	args2 "github.com/openshift-virtualization/wasp-agent/pkg/wasp/resources/args"
+	wasp "github.com/openshift-virtualization/wasp-agent/pkg/wasp/resources/operator"
+	"github.com/openshift-virtualization/wasp-agent/tools/util"
 	"k8s.io/klog/v2"
-	args2 "kubevirt.io/wasp/pkg/wasp/resources/args"
-	wasp "kubevirt.io/wasp/pkg/wasp/resources/operator"
-	"kubevirt.io/wasp/tools/util"
 	"os"
 	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client"

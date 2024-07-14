@@ -2,10 +2,10 @@ package operator
 
 import (
 	"fmt"
+	"github.com/openshift-virtualization/wasp-agent/pkg/wasp/resources/args"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utils "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/resources"
-	"kubevirt.io/wasp/pkg/wasp/resources/args"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

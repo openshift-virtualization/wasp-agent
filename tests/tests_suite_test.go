@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"github.com/onsi/ginkgo/v2"
 	ginkgo_reporters "github.com/onsi/ginkgo/v2/reporters"
+	"github.com/openshift-virtualization/wasp-agent/tests/flags"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	qe_reporters "kubevirt.io/qe-tools/pkg/ginkgo-reporters"
-	"kubevirt.io/wasp/tests/flags"
 	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/openshift-virtualization/wasp-agent/tests/framework"
 	corev1 "k8s.io/api/core/v1"
-	"kubevirt.io/wasp/tests/framework"
 )
 
 const (

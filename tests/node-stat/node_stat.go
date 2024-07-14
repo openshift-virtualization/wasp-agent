@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/openshift-virtualization/wasp-agent/tests/framework"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"kubevirt.io/wasp/tests/framework"
 	"strconv"
 	"strings"
 )
@@ -31,7 +31,9 @@ func getMemInfoByString(f *framework.Framework, node v1.Node, field string, file
 func GetAvailableMemSizeInKib(f *framework.Framework, node v1.Node) (int, error) {
 	return getMemInfoByString(f, node, "MemAvailable", "/proc/meminfo")
 }
-
+func GetSwapFreeSizeInKib(f *framework.Framework, node v1.Node) (int, error) {
+	return getMemInfoByString(f, node, "SwapFree", "/proc/meminfo")
+}
 func GetSwapInPages(f *framework.Framework, node v1.Node) (int, error) {
 	swapin, err := getMemInfoByString(f, node, "pswpin", "/proc/vmstat")
 	return swapin * 4 * 1024, err

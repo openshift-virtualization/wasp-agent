@@ -2,6 +2,7 @@ package informers
 
 import (
 	"context"
+	"github.com/openshift-virtualization/wasp-agent/pkg/client"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -9,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
-	"kubevirt.io/wasp/pkg/client"
 	"time"
 )
 

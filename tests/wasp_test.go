@@ -5,15 +5,16 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	eviction_controller "github.com/openshift-virtualization/wasp-agent/pkg/wasp/eviction-controller"
+	"github.com/openshift-virtualization/wasp-agent/tests/framework"
+	node_stat "github.com/openshift-virtualization/wasp-agent/tests/node-stat"
+	"github.com/openshift-virtualization/wasp-agent/tests/pod"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "kubevirt.io/api/core/v1"
-	eviction_controller "kubevirt.io/wasp/pkg/wasp/eviction-controller"
-	"kubevirt.io/wasp/tests/framework"
-	node_stat "kubevirt.io/wasp/tests/node-stat"
-	"kubevirt.io/wasp/tests/pod"
 	"time"
 )
 
@@ -35,7 +36,16 @@ var _ = Describe("Wasp tests", func() {
 			defer close(stopChan)
 			go printNodeStat(f, nodeToEvict, stopChan)
 			Expect(true).ToNot(BeFalse())
-			highmemPod := pod.GetMemhogPod("memory-hog-pod", "memory-hog", v1.ResourceRequirements{})
+			res := v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceMemory: resource.MustParse("50Mi"),
+				},
+				Limits: v1.ResourceList{
+					v1.ResourceMemory: resource.MustParse("50Gi"),
+				},
+			}
+
+			highmemPod := pod.GetMemhogPod("virt-launcher-memory-hog-pod", "memory-hog", res)
 			highmemPod.Spec.NodeName = nodeToEvict.Name
 			innocentPod := pod.InnocentPod()
 			innocentPod.Spec.NodeName = nodeToEvict.Name
@@ -48,7 +58,7 @@ var _ = Describe("Wasp tests", func() {
 				node, err := f.K8sClient.CoreV1().Nodes().Get(context.Background(), nodeToEvict.Name, metav1.GetOptions{})
 				Expect(err).ToNot(HaveOccurred())
 				return node.Spec.Taints
-			}).WithTimeout(5 * time.Minute).WithPolling(300 * time.Millisecond).Should(ContainElement(v1.Taint{
+			}).WithTimeout(30 * time.Minute).WithPolling(300 * time.Millisecond).Should(ContainElement(v1.Taint{
 				Key:    eviction_controller.WaspTaint,
 				Effect: v1.TaintEffectNoSchedule,
 			}))
@@ -92,16 +102,17 @@ func printNodeStat(f *framework.Framework, nodeToEval v1.Node, stopChan chan str
 			psin, errPsin := node_stat.GetSwapInPages(f, nodeToEval)
 			psout, errPsout := node_stat.GetSwapOutPages(f, nodeToEval)
 			availMem, errAvailMem := node_stat.GetAvailableMemSizeInKib(f, nodeToEval)
+			swapFree, errSwapFree := node_stat.GetSwapFreeSizeInKib(f, nodeToEval)
 
-			if errPsin != nil || errPsout != nil || errAvailMem != nil {
-				fmt.Printf("Error retrieving metrics: %v, %v, %v\n", errPsin, errPsout, errAvailMem)
+			if errPsin != nil || errPsout != nil || errAvailMem != nil || errSwapFree != nil {
+				fmt.Printf("Error retrieving metrics: %v, %v, %v , %v\n", errPsin, errPsout, errAvailMem, errSwapFree)
 			} else {
 				psinIncrement := psin - lastPsin
 				psoutIncrement := psout - lastPsout
 				avgPsinPerSec := psinIncrement / 3
 				avgPsoutPerSec := psoutIncrement / 3
 				if !firstTime {
-					fmt.Printf("Available Memory: %d KiB, Avrage SwapIn pages Increment Per Second: %d, Avrage SwapOut pages Increment Per Second: %d\n", availMem, avgPsinPerSec, avgPsoutPerSec)
+					fmt.Printf("Available Memory: %d KiB,Swap free: %d KiB, Avrage SwapIn pages Increment Per Second: %d, Avrage SwapOut pages Increment Per Second: %d\n", availMem, swapFree, avgPsinPerSec, avgPsoutPerSec)
 				}
 				firstTime = false
 

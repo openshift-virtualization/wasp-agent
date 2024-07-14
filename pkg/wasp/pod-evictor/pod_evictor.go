@@ -2,10 +2,10 @@ package pod_evictor
 
 import (
 	"context"
+	"github.com/openshift-virtualization/wasp-agent/pkg/client"
+	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubevirt.io/wasp/pkg/client"
-	"kubevirt.io/wasp/pkg/log"
 )
 
 // PodEvictor is an interface for evicting pods

@@ -1,6 +1,6 @@
 package main
 
-import "kubevirt.io/wasp/pkg/wasp"
+import "github.com/openshift-virtualization/wasp-agent/pkg/wasp"
 
 func main() {
 	wasp.Execute()

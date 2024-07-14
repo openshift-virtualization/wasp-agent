@@ -2,8 +2,8 @@ package shortage_detector
 
 import (
 	"fmt"
-	"kubevirt.io/wasp/pkg/log"
-	stats_collector "kubevirt.io/wasp/pkg/wasp/stats-collector"
+	"github.com/openshift-virtualization/wasp-agent/pkg/log"
+	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	"time"
 )
 

@@ -1,4 +1,4 @@
-module kubevirt.io/wasp
+module github.com/openshift-virtualization/wasp-agent
 
 go 1.20
 
