@@ -93,9 +93,6 @@ release-description:
 clean:
 	rm ./wasp -f
 
-gen-proto:
-	${DO_BAZ} "DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG} IMAGE_PULL_POLICY=${IMAGE_PULL_POLICY} VERBOSITY=${VERBOSITY} ./hack/gen-proto.sh"
-
 fmt:
 	go fmt .
 
