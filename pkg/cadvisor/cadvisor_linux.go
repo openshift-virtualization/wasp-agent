@@ -36,7 +36,7 @@ import (
 	cadvisormetrics "github.com/google/cadvisor/container"
 	cadvisorapi "github.com/google/cadvisor/info/v1"
 	cadvisorapiv2 "github.com/google/cadvisor/info/v2"
-	"github.com/google/cadvisor/manager"
+	cadvisorManager "github.com/google/cadvisor/manager"
 	"github.com/google/cadvisor/utils/sysfs"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
@@ -45,7 +45,7 @@ import (
 type cadvisorClient struct {
 	imageFsInfoProvider ImageFsInfoProvider
 	rootPath            string
-	manager.Manager
+	cadvisorManager.Manager
 }
 
 var _ Interface = new(cadvisorClient)
@@ -95,14 +95,13 @@ func New(imageFsInfoProvider ImageFsInfoProvider, rootPath string, cgroupRoots [
 		includedMetrics[cadvisormetrics.DiskUsageMetrics] = struct{}{}
 	}
 
+	var housekeepingConfig cadvisorManager.HouskeepingConfig
 	duration := maxHousekeepingInterval
-	housekeepingConfig := manager.HousekeepingConfig{
-		Interval:     &duration,
-		AllowDynamic: pointer.Bool(allowDynamicHousekeeping),
-	}
+	housekeepingConfig.Interval = &duration
+	housekeepingConfig.AllowDynamic = pointer.Bool(allowDynamicHousekeeping)
 
 	// Create the cAdvisor container manager.
-	m, err := manager.New(memory.New(statsCacheDuration, nil), sysFs, housekeepingConfig, includedMetrics, http.DefaultClient, cgroupRoots, nil /* containerEnvMetadataWhiteList */, "" /* perfEventsFile */, time.Duration(0) /*resctrlInterval*/)
+	m, err := cadvisorManager.New(memory.New(statsCacheDuration, nil), sysFs, housekeepingConfig, includedMetrics, http.DefaultClient, cgroupRoots, nil /* containerEnvMetadataWhiteList */, "" /* perfEventsFile */, time.Duration(0) /*resctrlInterval*/)
 	if err != nil {
 		return nil, err
 	}
