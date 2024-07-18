@@ -1,7 +1,6 @@
 package pod_filter
 
 import (
-	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -29,7 +28,7 @@ func (pr *PodFilterImpl) FilterPods(pods []v1.Pod) []v1.Pod {
 
 	for _, pod := range pods {
 		// Check if the namespace name starts with any of the excluded prefixes
-		if pod.Namespace != pr.waspNs && !pr.hasExcludedPrefix(pod.Namespace, excludedPrefixesForNamespaces) && !kubetypes.IsCriticalPod(&pod) {
+		if pod.Namespace != pr.waspNs && !pr.hasExcludedPrefix(pod.Namespace, excludedPrefixesForNamespaces) && !IsCriticalPod(&pod) {
 			filteredPods = append(filteredPods, pod)
 		}
 	}

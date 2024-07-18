@@ -95,10 +95,11 @@ func New(imageFsInfoProvider ImageFsInfoProvider, rootPath string, cgroupRoots [
 		includedMetrics[cadvisormetrics.DiskUsageMetrics] = struct{}{}
 	}
 
-	var housekeepingConfig cadvisorManager.HouskeepingConfig
 	duration := maxHousekeepingInterval
-	housekeepingConfig.Interval = &duration
-	housekeepingConfig.AllowDynamic = pointer.Bool(allowDynamicHousekeeping)
+	housekeepingConfig := cadvisorManager.HousekeepingConfig{
+		Interval:     &duration,
+		AllowDynamic: pointer.Bool(allowDynamicHousekeeping),
+	}
 
 	// Create the cAdvisor container manager.
 	m, err := cadvisorManager.New(memory.New(statsCacheDuration, nil), sysFs, housekeepingConfig, includedMetrics, http.DefaultClient, cgroupRoots, nil /* containerEnvMetadataWhiteList */, "" /* perfEventsFile */, time.Duration(0) /*resctrlInterval*/)

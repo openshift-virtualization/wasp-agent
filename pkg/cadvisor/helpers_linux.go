@@ -45,6 +45,7 @@ func (i *imageFsInfoProvider) ImageFsInfoLabel() (string, error) {
 // For remote runtimes, it handles addition runtimes natively understood by cAdvisor.
 func (i *imageFsInfoProvider) ContainerFsInfoLabel() (string, error) {
 	if detectCrioWorkaround(i) {
+
 		return cadvisorfs.LabelCrioContainers, nil
 	}
 	return "", fmt.Errorf("no containerfs label for configured runtime")
