@@ -1,6 +1,6 @@
 module github.com/openshift-virtualization/wasp-agent
 
-go 1.22
+go 1.20
 
 require (
 	k8s.io/apimachinery v0.28.4
