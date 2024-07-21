@@ -147,6 +147,10 @@ func createWaspDaemonSet(namespace, maxAverageSwapInPagesPerSecond, memoryMaxThr
 				Name:      "host",
 				MountPath: "/host",
 			},
+			{
+				Name:      "rootfs",
+				MountPath: "/rootfs",
+			},
 		},
 	}
 	container.Env = createDaemonSetEnvVar(maxAverageSwapInPagesPerSecond, memoryMaxThreshold, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity)
@@ -186,6 +190,14 @@ func createWaspDaemonSet(namespace, maxAverageSwapInPagesPerSecond, memoryMaxThr
 					Volumes: []corev1.Volume{
 						{
 							Name: "host",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/",
+								},
+							},
+						},
+						{
+							Name: "rootfs",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
 									Path: "/",
