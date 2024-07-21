@@ -50,9 +50,17 @@ type WaspApp struct {
 	fsRoot                          string
 }
 
+var debug bool
+
+func init() {
+	flag.BoolVar(&debug, "debug", false, "help message for flagname")
+}
+
 func Execute() {
 	var err error
 	flag.Parse()
+
+	setCrioSocketSymLink()
 	setOCIHook()
 
 	var app = WaspApp{}
@@ -117,6 +125,7 @@ func Execute() {
 		app.waspNs,
 		app.fsRoot,
 	)
+
 	stop := ctx.Done()
 	app.initEvictionController(stop)
 	app.Run(stop)
@@ -152,6 +161,19 @@ func (waspapp *WaspApp) Run(stop <-chan struct{}) {
 	}()
 	<-waspapp.ctx.Done()
 
+}
+
+func setCrioSocketSymLink() {
+	err := os.MkdirAll("/var/run/crio", 0755)
+	if err != nil {
+		klog.Warningf(err.Error())
+		return
+	}
+	os.Symlink("/host/var/run/crio/crio.sock", "/var/run/crio/crio.sock")
+	if err != nil {
+		klog.Warningf(err.Error())
+		return
+	}
 }
 
 func setOCIHook() {
