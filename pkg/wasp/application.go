@@ -50,12 +50,6 @@ type WaspApp struct {
 	fsRoot                          string
 }
 
-var debug bool
-
-func init() {
-	flag.BoolVar(&debug, "debug", false, "help message for flagname")
-}
-
 func Execute() {
 	var err error
 	flag.Parse()
