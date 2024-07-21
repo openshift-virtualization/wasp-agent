@@ -1,8 +1,8 @@
 package cadvisor
 
 const (
-	ContainerRuntimeEndpoint = "unix://var/lib/crio.sock"
-	RootDirectory            = "/tmp/var/lib/kubelet"
+	ContainerRuntimeEndpoint = "unix:///host/var/run/crio.sock"
+	RootDirectory            = "/host/var/lib/kubelet"
 )
 
 type cAdvisorConfig struct {
