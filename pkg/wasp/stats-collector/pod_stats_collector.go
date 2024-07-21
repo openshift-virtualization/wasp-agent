@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 )
 
 // defaultNetworkInterfaceName is used for collectng network stats.
@@ -44,14 +43,12 @@ type PodReference struct {
 type PodStatsCollector interface {
 	Init() error
 	GetPodSummary(pod *v1.Pod) (PodSummary, error)
-	GetPodStatus(uid types.UID) (v1.PodStatus, bool)
-	ListPodStats() ([]PodSummary, error)
+	ListPodsSummary() ([]PodSummary, error)
 }
 
 type PodStatsCollectorImpl struct {
 	cadviorInterface cadvisor.Interface
 	PodSummary       map[string]*PodSummary
-	PodStats         []statsapi.PodStats
 }
 
 func (psc *PodStatsCollectorImpl) GetPodSummary(pod *v1.Pod) (PodSummary, error) {
@@ -125,20 +122,7 @@ func (psc *PodStatsCollectorImpl) Init() error {
 	return nil
 }
 
-func (psc *PodStatsCollectorImpl) GetPodStatus(uid types.UID) (v1.PodStatus, bool) {
-	t := metav1.NewTime(time.Now())
-	status := v1.PodStatus{
-		StartTime: &t,
-	}
-	return status, true
-}
-
-func (psc *PodStatsCollectorImpl) GatherPodStats(name string, namespace string) PodSummary {
-	var summary PodSummary
-	return summary
-}
-
-func (psc *PodStatsCollectorImpl) ListPodStats() ([]PodSummary, error) {
+func (psc *PodStatsCollectorImpl) ListPodsSummary() ([]PodSummary, error) {
 	infos, err := getCadvisorContainerInfo(psc.cadviorInterface)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get container info from cadvisor: %v", err)
@@ -196,8 +180,6 @@ func (psc *PodStatsCollectorImpl) ListPodStats() ([]PodSummary, error) {
 	}
 
 	// Add each PodStats to the result.
-	result := make([]statsapi.PodStats, 0, len(podToStats))
-	psc.PodStats = make([]statsapi.PodStats, 0, len(podToStats))
 	podSummaryList := make([]PodSummary, 0, len(psc.PodSummary))
 	for _, podStats := range podToStats {
 		podUID := types.UID(podStats.PodRef.UID)
@@ -213,15 +195,7 @@ func (psc *PodStatsCollectorImpl) ListPodStats() ([]PodSummary, error) {
 			psc.PodSummary[string(podUID)].MemoryWorkingSetBytes = *podStats.Memory.WorkingSetBytes
 			psc.PodSummary[string(podUID)].MemorySwapCurrentBytes = *podStats.Swap.SwapUsageBytes
 		}
-
-		status, found := psc.GetPodStatus(podUID)
-		if found && status.StartTime != nil && !status.StartTime.IsZero() {
-			podStats.StartTime = *status.StartTime
-			// only append stats if we were able to get the start time of the pod
-			result = append(result, *podStats)
-			psc.PodStats = append(psc.PodStats, *podStats)
-			podSummaryList = append(podSummaryList, *psc.PodSummary[string(podUID)])
-		}
+		podSummaryList = append(podSummaryList, *psc.PodSummary[string(podUID)])
 	}
 	return podSummaryList, nil
 }
