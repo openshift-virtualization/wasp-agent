@@ -45,7 +45,6 @@ type PodStatsCollector interface {
 	Init() error
 	GetPodSummary(pod *v1.Pod) (PodSummary, error)
 	GetPodStatus(uid types.UID) (v1.PodStatus, bool)
-	ListPodSummary() map[string]*PodSummary
 	ListPodStats() ([]PodSummary, error)
 }
 
@@ -53,10 +52,6 @@ type PodStatsCollectorImpl struct {
 	cadviorInterface cadvisor.Interface
 	PodSummary       map[string]*PodSummary
 	PodStats         []statsapi.PodStats
-}
-
-func (psc *PodStatsCollectorImpl) ListPodSummary() map[string]*PodSummary {
-	return psc.PodSummary
 }
 
 func (psc *PodStatsCollectorImpl) GetPodSummary(pod *v1.Pod) (PodSummary, error) {
