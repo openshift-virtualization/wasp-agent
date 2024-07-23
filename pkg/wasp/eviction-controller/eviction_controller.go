@@ -44,6 +44,7 @@ type EvictionController struct {
 }
 
 func NewEvictionController(waspCli client.WaspClient,
+	podStatsCollector stats_collector.PodStatsCollector,
 	podInformer cache.SharedIndexInformer,
 	nodeInformer cache.SharedIndexInformer,
 	nodeName string,
@@ -60,7 +61,7 @@ func NewEvictionController(waspCli client.WaspClient,
 		nodeName:         nodeName,
 		waspCli:          waspCli,
 		podEvictor:       pod_evictor.NewPodEvictorImpl(waspCli),
-		podRanker:        pod_ranker.NewPodRankerImpl(),
+		podRanker:        pod_ranker.NewPodRankerImpl(podStatsCollector),
 		podFilter:        pod_filter.NewPodFilterImpl(waspNs),
 		resyncPeriod:     metav1.Duration{Duration: 5 * time.Second}.Duration,
 		podInformer:      podInformer,
@@ -119,18 +120,21 @@ func (ctrl *EvictionController) handleMemorySwapEviction() {
 		log.Log.Infof(err.Error())
 		return
 	}
-
-	rankedFilteredPods := ctrl.podRanker.RankPods(ctrl.podFilter.FilterPods(pods))
-
-	if len(rankedFilteredPods) == 0 {
+	filteredPods := ctrl.podFilter.FilterPods(pods)
+	if len(filteredPods) == 0 {
 		log.Log.Infof("Wasp evictor doesn't have any pod to evict")
 		return
 	}
-	for _, p := range rankedFilteredPods {
+	err = ctrl.podRanker.RankPods(filteredPods)
+	if err != nil {
+		log.Log.Infof(err.Error())
+	}
+
+	for _, p := range filteredPods {
 		log.Log.Infof("potenial pod: %v in ns: %v in node: %v", p.Name, p.Namespace, p.Spec.NodeName)
 	}
-	log.Log.Infof("will evict pod: %v  ns: %v", rankedFilteredPods[0].Name, rankedFilteredPods[0].Namespace)
-	err = ctrl.podEvictor.EvictPod(&rankedFilteredPods[0])
+	log.Log.Infof("will evict pod: %v  ns: %v", filteredPods[0].Name, filteredPods[0].Namespace)
+	err = ctrl.podEvictor.EvictPod(filteredPods[0])
 	if err != nil {
 		log.Log.Infof(err.Error())
 	}
@@ -208,7 +212,7 @@ func waitForSyncedStore(timeout <-chan time.Time, informerSynced func() bool) bo
 	return true
 }
 
-func (ctrl *EvictionController) listRunningPodsOnNode() ([]v1.Pod, error) {
+func (ctrl *EvictionController) listRunningPodsOnNode() ([]*v1.Pod, error) {
 	handlerNodeSelector := fields.ParseSelectorOrDie("spec.nodeName=" + ctrl.nodeName)
 	list, err := ctrl.waspCli.CoreV1().Pods(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{
 		FieldSelector: handlerNodeSelector.String(),
@@ -216,10 +220,10 @@ func (ctrl *EvictionController) listRunningPodsOnNode() ([]v1.Pod, error) {
 	if err != nil {
 		return nil, err
 	}
-	var pods []v1.Pod
+	var pods []*v1.Pod
 
 	for i := range list.Items {
-		pod := list.Items[i]
+		pod := &list.Items[i]
 
 		//  A pod with all containers terminated is not
 		// considered alive

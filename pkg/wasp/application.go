@@ -26,6 +26,7 @@ import (
 	"github.com/openshift-virtualization/wasp-agent/pkg/informers"
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	eviction_controller "github.com/openshift-virtualization/wasp-agent/pkg/wasp/eviction-controller"
+	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	"io"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/tools/cache"
@@ -36,6 +37,7 @@ import (
 )
 
 type WaspApp struct {
+	podStatsCollector               stats_collector.PodStatsCollector
 	evictionController              *eviction_controller.EvictionController
 	podInformer                     cache.SharedIndexInformer
 	nodeInformer                    cache.SharedIndexInformer
@@ -64,6 +66,12 @@ func Execute() {
 	AverageWindowSizeSeconds := os.Getenv("AVERAGE_WINDOW_SIZE_SECONDS")
 	app.nodeName = os.Getenv("NODE_NAME")
 	app.fsRoot = os.Getenv("FSROOT")
+
+	app.podStatsCollector = stats_collector.NewPodSummaryCollector()
+	err = app.podStatsCollector.Init()
+	if err != nil {
+		panic(err)
+	}
 
 	app.maxMemoryOverCommitmentBytes, err = resource.ParseQuantity(memoryOverCommitmentThreshold)
 	if err != nil {
@@ -127,6 +135,7 @@ func Execute() {
 
 func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
 	waspapp.evictionController = eviction_controller.NewEvictionController(waspapp.cli,
+		waspapp.podStatsCollector,
 		waspapp.podInformer,
 		waspapp.nodeInformer,
 		waspapp.nodeName,

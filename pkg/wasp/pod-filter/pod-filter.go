@@ -8,7 +8,7 @@ import (
 
 // PodFilter is an interface for filtering pods
 type PodFilter interface {
-	FilterPods(pods []v1.Pod) []v1.Pod
+	FilterPods(pods []*v1.Pod) []*v1.Pod
 }
 
 // PodFilterImpl implements PodFilter interface
@@ -20,15 +20,15 @@ func NewPodFilterImpl(waspNs string) *PodFilterImpl {
 	return &PodFilterImpl{}
 }
 
-func (pr *PodFilterImpl) FilterPods(pods []v1.Pod) []v1.Pod {
-	var filteredPods []v1.Pod
+func (pr *PodFilterImpl) FilterPods(pods []*v1.Pod) []*v1.Pod {
+	var filteredPods []*v1.Pod
 
 	// Prefixes to exclude
 	excludedPrefixesForNamespaces := []string{"openshift", "kube-system"}
 
 	for _, pod := range pods {
 		// Check if the namespace name starts with any of the excluded prefixes
-		if pod.Namespace != pr.waspNs && !pr.hasExcludedPrefix(pod.Namespace, excludedPrefixesForNamespaces) && !IsCriticalPod(&pod) {
+		if pod.Namespace != pr.waspNs && !pr.hasExcludedPrefix(pod.Namespace, excludedPrefixesForNamespaces) && !IsCriticalPod(pod) {
 			filteredPods = append(filteredPods, pod)
 		}
 	}

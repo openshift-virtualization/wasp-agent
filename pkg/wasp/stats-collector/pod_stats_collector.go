@@ -28,8 +28,8 @@ type ContainerSummary struct {
 type PodSummary struct {
 	UID                    types.UID
 	CgroupKey              string
-	MemoryWorkingSetBytes  uint64
-	MemorySwapCurrentBytes uint64
+	MemoryWorkingSetBytes  *uint64
+	MemorySwapCurrentBytes *uint64
 	Containers             map[string]ContainerSummary
 }
 
@@ -77,9 +77,9 @@ func (psc *PodStatsCollectorImpl) GetPodSummary(pod *v1.Pod) (PodSummary, error)
 	}
 
 	_, memory := cadvisorInfoToCPUandMemoryStats(podInfo)
-	summary.MemoryWorkingSetBytes = *memory.WorkingSetBytes
+	summary.MemoryWorkingSetBytes = memory.WorkingSetBytes
 	swapStats := cadvisorInfoToSwapStats(podInfo)
-	summary.MemorySwapCurrentBytes = *swapStats.SwapUsageBytes
+	summary.MemorySwapCurrentBytes = swapStats.SwapUsageBytes
 
 	summary.Containers = make(map[string]ContainerSummary, len(filteredInfos))
 	for _, cinfo := range filteredInfos {
@@ -191,9 +191,12 @@ func (psc *PodStatsCollectorImpl) ListPodsSummary() ([]PodSummary, error) {
 			podStats.Memory = memory
 			podStats.Swap = cadvisorInfoToSwapStats(podInfo)
 			podStats.ProcessStats = cadvisorInfoToProcessStats(podInfo)
-
-			psc.PodSummary[string(podUID)].MemoryWorkingSetBytes = *podStats.Memory.WorkingSetBytes
-			psc.PodSummary[string(podUID)].MemorySwapCurrentBytes = *podStats.Swap.SwapUsageBytes
+			if podStats.Memory != nil {
+				psc.PodSummary[string(podUID)].MemoryWorkingSetBytes = podStats.Memory.WorkingSetBytes
+			}
+			if podStats.Swap != nil {
+				psc.PodSummary[string(podUID)].MemorySwapCurrentBytes = podStats.Swap.SwapUsageBytes
+			}
 		}
 		podSummaryList = append(podSummaryList, *psc.PodSummary[string(podUID)])
 	}
