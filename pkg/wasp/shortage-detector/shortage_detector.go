@@ -1,6 +1,7 @@
 package shortage_detector
 
 import (
+	"fmt"
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	"time"
@@ -47,7 +48,6 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() bool {
 	}
 
 	if secondNewest == nil {
-		log.Log.Infof("could not find second newest Stats with at least %v difference", sdi.AverageWindowSizeSeconds)
 		return false
 	}
 
@@ -67,5 +67,14 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() bool {
 		log.Log.Infof(fmt.Sprintf("Debug: overcommitment size:%v condition: %v", firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes, overCommitmentRatioCondition))
 	*/
 
+	if highTrafficCondition {
+		log.Log.Infof("highTrafficCondition is true")
+		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
+		log.Log.Infof(fmt.Sprintf("Debug: averageSwapOutPerSecond:%v condition: %v", averageSwapOutPerSecond, averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond))
+	}
+	if overCommitmentRatioCondition {
+		log.Log.Infof("overCommitmentRatioCondition is true")
+		log.Log.Infof(fmt.Sprintf("Debug: overcommitment size:%v condition: %v", firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes, overCommitmentRatioCondition))
+	}
 	return highTrafficCondition || overCommitmentRatioCondition
 }

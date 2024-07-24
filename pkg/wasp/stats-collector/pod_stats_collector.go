@@ -443,7 +443,7 @@ func cadvisorInfoToCPUandMemoryStats(info *cadvisorapiv2.ContainerInfo) (*statsa
 			MajorPageFaults: &majorPageFaults,
 		}
 		// availableBytes = memory limit (if known) - workingset
-		if !isMemoryUnlimited(info.Spec.Memory.Limit) {
+		if !IsMemoryUnlimited(info.Spec.Memory.Limit) {
 			availableBytes := info.Spec.Memory.Limit - cstat.Memory.WorkingSet
 			memoryStats.AvailableBytes = &availableBytes
 		}
@@ -456,7 +456,7 @@ func cadvisorInfoToCPUandMemoryStats(info *cadvisorapiv2.ContainerInfo) (*statsa
 	return cpuStats, memoryStats
 }
 
-func isMemoryUnlimited(v uint64) bool {
+func IsMemoryUnlimited(v uint64) bool {
 	// Size after which we consider memory to be "unlimited". This is not
 	// MaxInt64 due to rounding by the kernel.
 	// TODO: cadvisor should export this https://github.com/google/cadvisor/blob/master/metrics/prometheus.go#L596
@@ -483,7 +483,7 @@ func cadvisorInfoToSwapStats(info *cadvisorapiv2.ContainerInfo) *statsapi.SwapSt
 			SwapUsageBytes: &cstat.Memory.Swap,
 		}
 
-		if !isMemoryUnlimited(info.Spec.Memory.SwapLimit) {
+		if !IsMemoryUnlimited(info.Spec.Memory.SwapLimit) {
 			swapAvailableBytes := info.Spec.Memory.SwapLimit - cstat.Memory.Swap
 			swapStats.SwapAvailableBytes = &swapAvailableBytes
 		}

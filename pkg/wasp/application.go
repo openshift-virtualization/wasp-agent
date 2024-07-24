@@ -26,6 +26,7 @@ import (
 	"github.com/openshift-virtualization/wasp-agent/pkg/informers"
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	eviction_controller "github.com/openshift-virtualization/wasp-agent/pkg/wasp/eviction-controller"
+	limited_swap_manager "github.com/openshift-virtualization/wasp-agent/pkg/wasp/limited-swap-manager"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	"io"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -39,6 +40,7 @@ import (
 type WaspApp struct {
 	podStatsCollector               stats_collector.PodStatsCollector
 	evictionController              *eviction_controller.EvictionController
+	limitesSwapManager              *limited_swap_manager.LimitedSwapManager
 	podInformer                     cache.SharedIndexInformer
 	nodeInformer                    cache.SharedIndexInformer
 	ctx                             context.Context
@@ -130,6 +132,7 @@ func Execute() {
 
 	stop := ctx.Done()
 	app.initEvictionController(stop)
+	app.initLimitedSwapManager(stop)
 	app.Run(stop)
 }
 
@@ -144,6 +147,13 @@ func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
 		waspapp.maxMemoryOverCommitmentBytes,
 		waspapp.AverageWindowSizeSeconds,
 		waspapp.waspNs,
+		stop,
+	)
+}
+func (waspapp *WaspApp) initLimitedSwapManager(stop <-chan struct{}) {
+	waspapp.limitesSwapManager = limited_swap_manager.NewLimitedSwapManager(waspapp.cli,
+		waspapp.podInformer,
+		waspapp.nodeName,
 		stop,
 	)
 }
@@ -162,6 +172,10 @@ func (waspapp *WaspApp) Run(stop <-chan struct{}) {
 	go func() {
 		waspapp.evictionController.Run(waspapp.ctx)
 	}()
+	go func() {
+		waspapp.limitesSwapManager.Run(1)
+	}()
+
 	<-waspapp.ctx.Done()
 
 }
