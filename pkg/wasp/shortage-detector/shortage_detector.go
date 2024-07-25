@@ -33,7 +33,6 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector, maxAverageSwapIn
 func (sdi *ShortageDetectorImpl) ShouldEvict() bool {
 	stats := sdi.sc.GetStatsList()
 	if len(stats) < 2 {
-		log.Log.Infof("not enough stats provided, need at least 2")
 		return false
 	}
 

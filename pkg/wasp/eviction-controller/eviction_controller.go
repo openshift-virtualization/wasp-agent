@@ -130,10 +130,11 @@ func (ctrl *EvictionController) handleMemorySwapEviction() {
 		log.Log.Infof(err.Error())
 	}
 
+	var evictionDetails string
 	for _, p := range filteredPods {
-		log.Log.Infof("potenial pod: %v in ns: %v in node: %v", p.Name, p.Namespace, p.Spec.NodeName)
+		evictionDetails += fmt.Sprintf("pod: %v in ns: %v in node: %v\n", p.Name, p.Namespace, p.Spec.NodeName)
 	}
-	log.Log.Infof("will evict pod: %v  ns: %v", filteredPods[0].Name, filteredPods[0].Namespace)
+	log.Log.Infof("Pods in eviction order:\n%vWill evict pod: %v in ns: %v", evictionDetails, filteredPods[0].Name, filteredPods[0].Namespace)
 	err = ctrl.podEvictor.EvictPod(filteredPods[0])
 	if err != nil {
 		log.Log.Infof(err.Error())
