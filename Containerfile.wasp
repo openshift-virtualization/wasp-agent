@@ -1,8 +1,12 @@
 # Builder stage
-FROM golang:1.20-alpine as builder
+FROM fedora:38 as builder
 
-# Install make
-RUN apk update && apk add make
+# Install necessary tools for building
+RUN dnf update -y && dnf install -y \
+    golang \
+    make \
+    git \
+    && dnf clean all
 
 # Copy the source code from the host to the container
 COPY pkg /workdir/app/pkg
@@ -18,7 +22,7 @@ WORKDIR /workdir/app
 RUN make wasp
 
 # Final stage
-FROM golang:1.20-alpine
+FROM fedora:38
 
 # Copy the binary from the builder stage to the final image
 COPY --from=builder /workdir/app/wasp /app/wasp
@@ -27,7 +31,8 @@ COPY OCI-hook /app/OCI-hook
 # Set the working directory to /app
 WORKDIR /app
 
-RUN adduser -u 1001 -D -s /bin/sh -h /app/wasp wasp
+# Add a non-root user for running the application
+RUN useradd -u 1001 -r -s /sbin/nologin -d /app/wasp wasp
 USER 1001
 
 # Set the entrypoint to the binary
