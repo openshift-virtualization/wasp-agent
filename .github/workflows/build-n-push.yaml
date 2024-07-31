@@ -21,7 +21,7 @@ jobs:
         image: wasp-agent
         tags: latest ${{ github.sha }}
         containerfiles: |
-          ./Containerfile
+          ./Containerfile.wasp
 
     - name: Push To quay.io
       if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
