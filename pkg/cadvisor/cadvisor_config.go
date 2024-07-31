@@ -17,7 +17,7 @@ func NewCAdvisorConfigForCRIO() *cAdvisorConfig {
 	return &cAdvisorConfig{
 		ImageFsInfoProvider:           NewImageFsInfoProvider(ContainerRuntimeEndpoint),
 		RootPath:                      RootDirectory,
-		CgroupRoots:                   []string{"/kubepods.slice", "/system.slice"},
+		CgroupRoots:                   []string{"/kubepods.slice", "/system.slice", "/kubepods"},
 		UsingLegacyStats:              UsingLegacyCadvisorStats(ContainerRuntimeEndpoint),
 		LocalStorageCapacityIsolation: false, // we don't need fs stats
 	}
