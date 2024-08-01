@@ -3,7 +3,6 @@ package pod_ranker
 import (
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	v1 "k8s.io/api/core/v1"
-	v1resource "k8s.io/kubernetes/pkg/api/v1/resource"
 )
 
 // PodRanker is an interface for ranking pods
@@ -33,6 +32,6 @@ func (pr *PodRankerImpl) RankPods(pods []*v1.Pod) error {
 		}
 		return stats_collector.PodSummary{}, false
 	}
-	orderedBy(exceedMemory(summary, GetResourceLimitsQuantity), exceedMemory(summary, v1resource.GetResourceRequestQuantity), priority, memory(summary)).Sort(pods)
+	orderedBy(exceedMemoryLimits(summary), exceedMemoryRequests(summary), priority, memory(summary)).Sort(pods)
 	return nil
 }
