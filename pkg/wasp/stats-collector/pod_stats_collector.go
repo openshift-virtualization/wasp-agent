@@ -21,8 +21,8 @@ const defaultNetworkInterfaceName = "eth0"
 
 type ContainerSummary struct {
 	MemorySwapMaxBytes     uint64
-	MemorySwapCurrentBytes uint64
-	MemoryWorkingSetBytes  uint64
+	MemorySwapCurrentBytes *uint64
+	MemoryWorkingSetBytes  *uint64
 }
 
 type PodSummary struct {
@@ -88,9 +88,12 @@ func (psc *PodStatsCollectorImpl) GetPodSummary(pod *v1.Pod) (PodSummary, error)
 			continue
 		}
 		containerStats := cadvisorInfoToContainerStats(containerName, &cinfo, nil, nil)
-		summary.Containers[containerName] = ContainerSummary{
-			MemorySwapMaxBytes:    cinfo.Spec.Memory.SwapLimit,
-			MemoryWorkingSetBytes: *containerStats.Memory.WorkingSetBytes,
+		if containerStats.Memory != nil && containerStats.Swap != nil {
+			summary.Containers[containerName] = ContainerSummary{
+				MemorySwapMaxBytes:     cinfo.Spec.Memory.SwapLimit,
+				MemoryWorkingSetBytes:  containerStats.Memory.WorkingSetBytes,
+				MemorySwapCurrentBytes: containerStats.Swap.SwapAvailableBytes,
+			}
 		}
 	}
 
@@ -171,10 +174,12 @@ func (psc *PodStatsCollectorImpl) ListPodsSummary() ([]PodSummary, error) {
 			containerStat := cadvisorInfoToContainerStats(containerName, &cinfo, nil, nil)
 			containerStat.Logs = nil
 			podStats.Containers = append(podStats.Containers, *containerStat)
-			podSum.Containers[containerName] = ContainerSummary{
-				MemorySwapMaxBytes:     cinfo.Spec.Memory.SwapLimit,
-				MemoryWorkingSetBytes:  *containerStat.Memory.WorkingSetBytes,
-				MemorySwapCurrentBytes: *containerStat.Swap.SwapUsageBytes,
+			if containerStat.Memory != nil && containerStat.Swap != nil {
+				podSum.Containers[containerName] = ContainerSummary{
+					MemorySwapMaxBytes:     cinfo.Spec.Memory.SwapLimit,
+					MemoryWorkingSetBytes:  containerStat.Memory.WorkingSetBytes,
+					MemorySwapCurrentBytes: containerStat.Swap.SwapUsageBytes,
+				}
 			}
 		}
 	}

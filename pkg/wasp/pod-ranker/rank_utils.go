@@ -88,7 +88,7 @@ func priority(p1, p2 *v1.Pod) int {
 type summaryFunc func(pod *v1.Pod) (stats_collector.PodSummary, bool)
 
 // exceedMemory compares whether or not pods' memory usage exceeds their requests
-func exceedMemory(summary summaryFunc, GetResourceQuantity func(pod *v1.Pod, resourceName v1.ResourceName) resource.Quantity) cmpFunc {
+func exceedMemoryRequests(summary summaryFunc) cmpFunc {
 	return func(p1, p2 *v1.Pod) int {
 		p1Stats, p1Found := summary(p1)
 		p2Stats, p2Found := summary(p2)
@@ -104,14 +104,52 @@ func exceedMemory(summary summaryFunc, GetResourceQuantity func(pod *v1.Pod, res
 			log.Log.Infof(fmt.Sprintf("Debug: ______________________________________________________________________________________________________________"))
 			log.Log.Infof(fmt.Sprintf("Debug: p1Name: %v p1Namespace: %v p2Name: %v p2Namespace: %v", p1.Name, p1.Namespace, p2.Name, p2.Namespace))
 			log.Log.Infof(fmt.Sprintf("Debug: p1MemoryAndSwapSum:%v p2MemoryAndSwapSum: %v", p1MemoryAndSwapSum, p2MemoryAndSwapSum))
-			log.Log.Infof(fmt.Sprintf("Debug: GetResourceQuantity(p1, v1.ResourceMemory):%v GetResourceQuantity(p2, v1.ResourceMemory): %v", GetResourceQuantity(p1, v1.ResourceMemory), GetResourceQuantity(p2, v1.ResourceMemory)))
+			log.Log.Infof(fmt.Sprintf("Debug: GetResourceRequestQuantity(p1, v1.ResourceMemory):%v GetResourceRequestQuantity(p2, v1.ResourceMemory): %v", v1resource.GetResourceRequestQuantity(p1, v1.ResourceMemory), v1resource.GetResourceRequestQuantity(p2, v1.ResourceMemory)))
 		*/
+		p1ExceedsRequests := p1MemoryAndSwapSum.Cmp(v1resource.GetResourceRequestQuantity(p1, v1.ResourceMemory)) == 1
+		p2ExceedsRequests := p2MemoryAndSwapSum.Cmp(v1resource.GetResourceRequestQuantity(p2, v1.ResourceMemory)) == 1
 
-		p1ExceedsRequests := p1MemoryAndSwapSum.Cmp(GetResourceQuantity(p1, v1.ResourceMemory)) == 1
-		p2ExceedsRequests := p2MemoryAndSwapSum.Cmp(GetResourceQuantity(p2, v1.ResourceMemory)) == 1
 		// prioritize evicting the pod which exceeds its requests
 		return cmpBool(p1ExceedsRequests, p2ExceedsRequests)
 	}
+}
+
+// exceedMemory compares whether or not pods' memory usage exceeds their requests
+func exceedMemoryLimits(summary summaryFunc) cmpFunc {
+	return func(p1, p2 *v1.Pod) int {
+		p1Stats, p1Found := summary(p1)
+		p2Stats, p2Found := summary(p2)
+		if !p1Found || !p2Found {
+			// prioritize evicting the pod for which no stats were found
+			return cmpBool(!p1Found, !p2Found)
+		}
+		p1HasContainerExceedMemoryLimits := hasContainerExceedMemoryLimits(p1, p1Stats)
+		p2HasContainerExceedMemoryLimits := hasContainerExceedMemoryLimits(p2, p2Stats)
+
+		// prioritize evicting the pod which exceeds its requests
+		return cmpBool(p1HasContainerExceedMemoryLimits, p2HasContainerExceedMemoryLimits)
+	}
+}
+
+func hasContainerExceedMemoryLimits(pod *v1.Pod, summary stats_collector.PodSummary) bool {
+	for _, container := range pod.Spec.Containers {
+		if rQuantity, ok := container.Resources.Limits[v1.ResourceMemory]; ok {
+			memoryAndSwapSumQuantity := memoryAndSwapUsage(*summary.Containers[container.Name].MemoryWorkingSetBytes, *summary.Containers[container.Name].MemorySwapCurrentBytes)
+			if memoryAndSwapSumQuantity.Cmp(rQuantity) == 1 {
+				return true
+			}
+		}
+	}
+
+	for _, container := range pod.Spec.InitContainers {
+		if rQuantity, ok := container.Resources.Limits[v1.ResourceMemory]; ok {
+			memoryAndSwapSumQuantity := memoryAndSwapUsage(*summary.Containers[container.Name].MemoryWorkingSetBytes, *summary.Containers[container.Name].MemorySwapCurrentBytes)
+			if memoryAndSwapSumQuantity.Cmp(rQuantity) == 1 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // cmpBool compares booleans, placing true before false
