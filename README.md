@@ -5,37 +5,79 @@ an out-of-(kubernetes)-tree mechanism based on an OCI hook.
 
 The design can be found in https://github.com/openshift/enhancements/pull/1630
 
-# Scope
+## Prerequisites
+- CRI-O as CRI
+- runc as OCI
+- Swap enabled
 
-- Node
-  - Enable swap on the node
-  - Disable swap in the system.slice
-  - Set io latency for system.slice
-  - Install an OCI hook to enable swap
-  - Set memory.high for kubepods.slice
-  - Configure soft eviction
-- Workloads
-  - Enable swap=max for every burstable pod using an OCI hook
-  - Set limited swap for workloads (TODO)
+## Recommendations
+- Set io latency for system.slice
+- Disable swap in the system.slice
 
-# Build
+## Wasp Agent: configuring Kubernetes containers
+- Install an OCI hook to enable swap, setting swap=max for every burstable virt-launcher pod.
 
-    $ bash to.sh build
-    $ bash to.sh push  # only to my account right now
+### Future plans
+- Set a specific amount of swap for each burstable pod to match Kubernetes limited swap settings.
 
-# Deploy
+## Eviction
 
-    # Deploy to OCP 4.15 or higher
-    $ oc login --token= …
-    $ bash to.sh deploy
+### Swap based eviction signals
+- Utilization - How close are we to run out of swap? (WIP - maybe kubernetes built in signal is good enough)
+- Traffic - How badly is swapping affecting the system?
+- Overcommit ratio - How over committed is the system?
 
-# Demo
+### Pod selection for eviction
+- Eviction targets non-static pods, mirror pods, or critical system pods based on pod priority. 
+  Pods in namespaces beginning with "openshift" or "kube-system" are excluded from eviction.
+- Currently, a "basic" implementation prioritizes pods with "memory" substring in their name.
 
-    $ oc apply -f manifests/static.yaml
-    $ oc apply -f manifests/stress.yaml
-    # Now increase the stress deployment replicacount in order to push out
-    # memory of static pods
+#### Future plan
 
-# Destroy
+- Eviction order:
+  - Exceeding memory resource limits
+  - Exceeding resource requests 
+  - Pod Priority
+  - The pod's resource usage relative to requests
 
-    $ bash to.sh destroy
+Note: This is inspired by the [Kubernetes eviction order](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/#pod-selection-for-kubelet-eviction)
+, with an additional first criterion.
+
+
+## Build
+
+### Deploy it on your cluster
+
+```bash
+$ mkdir $GOPATH/src/wasp.io && cd $GOPATH/src/wasp.io
+$ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-agent
+$ export KUBECONFIG=<kubeconfig-path>
+$ export KUBEVIRT_PROVIDER=external 
+$ make cluster-sync
+```
+If you are interested in pushing the images to a remote repository:
+```bash
+$ mkdir $GOPATH/src/wasp.io && cd $GOPATH/src/wasp.io
+$ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-agent
+$ export DOCKER_PREFIX=<desired-registry>
+$ export DOCKER_TAG=<desired-tag>
+$ export KUBECONFIG=<kubeconfig-path>
+$ export KUBEVIRT_PROVIDER=external 
+$ make cluster-sync
+```
+
+### Deploy it with our CI system
+
+Wasp includes a self-contained development and test environment.  
+We use Docker to build, and we provide a simple way to get a test 
+cluster up and running on your laptop. 
+The development tools include a version of kubectl that you can use to communicate with the cluster. 
+A wrapper script to communicate with the cluster can be invoked using ./cluster-up/kubectl.sh.
+
+```bash
+$ mkdir $GOPATH/src/kubevirt.io && cd $GOPATH/src/kubevirt.io
+$ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-agent
+$ make cluster-up
+$ make cluster-sync
+$ ./cluster-up/kubectl.sh .....
+```

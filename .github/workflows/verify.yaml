@@ -2,10 +2,10 @@ name: lint
 
 on:
   push:
-    branches: ['main']
-    tags: ['v*']
+    branches: ['!main']
+    tags: ['!v*']
   pull_request:
-    branches: ['main']
+    branches: ['!main']
 
 jobs:
   bash:

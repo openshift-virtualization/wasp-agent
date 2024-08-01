@@ -1,0 +1,39 @@
+# Builder stage
+FROM fedora:38 as builder
+
+# Install necessary tools for building
+RUN dnf update -y && dnf install -y \
+    golang \
+    make \
+    git \
+    && dnf clean all
+
+# Copy the source code from the host to the container
+COPY pkg /workdir/app/pkg
+COPY tools /workdir/app/tools
+COPY cmd /workdir/app/cmd
+COPY vendor /workdir/app/vendor
+COPY go.mod /workdir/app/go.mod
+COPY go.sum /workdir/app/go.sum
+COPY Makefile /workdir/app/Makefile
+
+WORKDIR /workdir/app
+
+RUN make wasp
+
+# Final stage
+FROM fedora:38
+
+# Copy the binary from the builder stage to the final image
+COPY --from=builder /workdir/app/wasp /app/wasp
+COPY OCI-hook /app/OCI-hook
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Add a non-root user for running the application
+RUN useradd -u 1001 -r -s /sbin/nologin -d /app/wasp wasp
+USER 1001
+
+# Set the entrypoint to the binary
+ENTRYPOINT ["/app/wasp"]
