@@ -45,7 +45,8 @@ var waspFactoryFunctions = map[string]factoryFunc{
 	"wasp-cluster-rbac": createClusterRBAC,
 	"wasp-rbac":         createNamespacedRBAC,
 	"wasp-daemonset":    createDaemonSet,
-	"everything":        aggregateFactoryFunc(createClusterRBAC, createNamespacedRBAC, createDaemonSet),
+	"wasp-prom-rule":    createPrometheusRule,
+	"everything":        aggregateFactoryFunc(createClusterRBAC, createNamespacedRBAC, createDaemonSet, createPrometheusRule),
 }
 
 // ClusterServiceVersionData - Data arguments used to create wasp's CSV manifest

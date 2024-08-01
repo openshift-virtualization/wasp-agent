@@ -15,14 +15,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
+	"text/template"
+
+	"github.com/openshift-virtualization/wasp-agent/pkg/monitoring/rules"
 	args2 "github.com/openshift-virtualization/wasp-agent/pkg/wasp/resources/args"
 	wasp "github.com/openshift-virtualization/wasp-agent/pkg/wasp/resources/operator"
 	"github.com/openshift-virtualization/wasp-agent/tools/util"
+
 	"k8s.io/klog/v2"
-	"os"
-	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"text/template"
 )
 
 type templateData struct {
@@ -48,6 +51,7 @@ var (
 	operatorVersion                 = flag.String("operator-version", "", "")
 	genManifestsPath                = flag.String("generated-manifests-path", "", "")
 	deployClusterResources          = flag.String("deploy-cluster-resources", "", "")
+	deployPrometheusRule            = flag.String("deploy-prometheus-rule", "", "")
 	operatorImage                   = flag.String("operator-image", "", "")
 	verbosity                       = flag.String("verbosity", "1", "")
 	pullPolicy                      = flag.String("pull-policy", "", "")
@@ -83,6 +87,8 @@ func main() {
 		generateFromFile(*templFile)
 		return
 	}
+
+	rules.SetupRules()
 
 	generateFromCode(*resourceType, *resourceGroup)
 }
@@ -162,6 +168,7 @@ func getOperatorResources(resourceGroup string) ([]client.Object, error) {
 			Verbosity:                       *verbosity,
 			OperatorVersion:                 *operatorVersion,
 			DeployClusterResources:          *deployClusterResources,
+			DeployPrometheusRule:            *deployPrometheusRule,
 			PullPolicy:                      *pullPolicy,
 			Namespace:                       *namespace,
 			MaxAverageSwapInPagesPerSecond:  *maxAverageSwapInPagesPerSecond,

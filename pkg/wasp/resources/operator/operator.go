@@ -2,7 +2,10 @@ package operator
 
 import (
 	"fmt"
+
+	"github.com/openshift-virtualization/wasp-agent/pkg/monitoring/rules"
 	utils2 "github.com/openshift-virtualization/wasp-agent/pkg/util"
+
 	secv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,6 +21,7 @@ import (
 const (
 	roleName        = "wasp"
 	clusterRoleName = roleName + "-cluster"
+	promRuleName    = "wasp-rules"
 )
 
 func getClusterPolicyRules() []rbacv1.PolicyRule {
@@ -76,6 +80,16 @@ func createNamespacedRBAC(args *FactoryArgs) []client.Object {
 }
 func createServiceAccount(namespace string) *corev1.ServiceAccount {
 	return utils2.ResourceBuilder.CreateOperatorServiceAccount(utils2.OperatorServiceAccountName, namespace)
+}
+
+func createPrometheusRule(args *FactoryArgs) []client.Object {
+	if args.NamespacedArgs.DeployPrometheusRule == "true" {
+		return []client.Object{
+			rules.CreatePrometheusRule(promRuleName, args.NamespacedArgs.Namespace),
+		}
+	}
+
+	return nil
 }
 
 func createDaemonSet(args *FactoryArgs) []client.Object {
