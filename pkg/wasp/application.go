@@ -33,7 +33,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -60,7 +62,7 @@ func Execute() {
 
 	setCrioSocketSymLink()
 	setOCIHook()
-
+	go cleanUpFilesOnTermination()
 	var app = WaspApp{}
 	memoryOverCommitmentThreshold := os.Getenv("MEMORY_OVER_COMMITMENT_THRESHOLD")
 	maxAverageSwapInPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND")
@@ -176,7 +178,7 @@ func (waspapp *WaspApp) Run(stop <-chan struct{}) {
 		waspapp.limitesSwapManager.Run(1)
 	}()
 
-	<-waspapp.ctx.Done()
+	<-stop
 
 }
 
@@ -232,4 +234,31 @@ func moveFile(sourcePath, destPath string) error {
 	}
 
 	return nil
+}
+
+// deleteFile attempts to delete the specified file and ignores errors if the file does not exist.
+func deleteFile(path string) {
+	err := os.Remove(path)
+	if err != nil && !os.IsNotExist(err) {
+		log.Log.Errorf("Error deleting file %s: %v\n", path, err)
+	}
+}
+
+func cleanUpFilesOnTermination() {
+	// Set up signal handling
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+
+	go func() {
+		<-sigs
+		files := []string{
+			"/host/run/containers/oci/hooks.d/swap-for-burstable.json",
+			"/host/opt/oci-hook-swap.sh",
+		}
+
+		for _, file := range files {
+			deleteFile(file)
+		}
+		os.Exit(0)
+	}()
 }
