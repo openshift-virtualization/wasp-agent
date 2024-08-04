@@ -126,6 +126,25 @@ $ oc patch --type=merge \
 >     $ oc wait mcp worker --for condition=Updated=True
 >
 
+### Upgrade path
+For users of wasp-agent v1.0, which lacks LimitedSwap and eviction support, here is the upgrade path:
+1. Adjust KubeletConfig:
+   If you have installed the KubeletConfiguration object from version v1.0, you need to update it. 
+   This can be done by applying the updated [KubeletConfiguration example](../manifests/openshift/kubelet-configuration-with-swap.yaml).
+```console
+$ oc replace -f <../manifests/openshift/kubelet-configuration-with-swap.yaml>
+```
+2. Update DaemonSet:
+   Apply the updated DaemonSet by using the provided [DaemonSet example](../manifests/openshift/ds.yaml).
+```console
+$ oc apply -f <../manifests/openshift/ds.yaml>
+```
+3. Update monitoring object:
+```console
+$ oc delete AlertingRule wasp-alerts -nopenshift-monitoring
+$ oc create -f <../manifests/openshift/prometheus-rule.yaml>
+```
+
 ### Verification
 
 1. Validate the deployment
