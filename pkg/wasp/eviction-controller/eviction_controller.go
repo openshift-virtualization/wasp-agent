@@ -91,7 +91,11 @@ func (ctrl *EvictionController) gatherStatistics() (*v1.Node, error) {
 }
 
 func (ctrl *EvictionController) handleMemorySwapEviction() {
-	shouldEvict := ctrl.shortageDetector.ShouldEvict()
+	shouldEvict, err := ctrl.shortageDetector.ShouldEvict()
+	if err != nil {
+		log.Log.Infof(err.Error())
+		return
+	}
 	node, err := ctrl.getNode()
 	if err != nil {
 		log.Log.Infof(err.Error())
@@ -110,7 +114,6 @@ func (ctrl *EvictionController) handleMemorySwapEviction() {
 		if err != nil {
 			log.Log.Infof(err.Error())
 		}
-		ctrl.statsCollector.FlushStats()
 	}
 	if !shouldEvict {
 		return
@@ -138,7 +141,9 @@ func (ctrl *EvictionController) handleMemorySwapEviction() {
 	err = ctrl.podEvictor.EvictPod(filteredPods[0])
 	if err != nil {
 		log.Log.Infof(err.Error())
+		return
 	}
+	ctrl.statsCollector.FlushStats()
 }
 
 func nodeHasEvictionTaint(node *v1.Node) bool {

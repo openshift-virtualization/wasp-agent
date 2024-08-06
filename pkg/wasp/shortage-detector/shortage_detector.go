@@ -9,7 +9,7 @@ import (
 
 // ShortageDetector is an interface for shortage detection
 type ShortageDetector interface {
-	ShouldEvict() bool
+	ShouldEvict() (bool, error)
 }
 
 type ShortageDetectorImpl struct {
@@ -30,24 +30,27 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector, maxAverageSwapIn
 	}
 }
 
-func (sdi *ShortageDetectorImpl) ShouldEvict() bool {
+func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 	stats := sdi.sc.GetStatsList()
 	if len(stats) < 2 {
-		return false
+		return false, fmt.Errorf("not enough Stats to detect shortage")
 	}
 
 	// Find the second newest Stats object after the first one with at least AverageWindowSizeSeconds difference
 	firstStat := stats[0]
 	var secondNewest *stats_collector.Stats
+	minTimeInterval := time.Second * 5
 	for i := 1; i < len(stats); i++ {
-		if firstStat.Time.Sub(stats[i].Time) >= sdi.AverageWindowSizeSeconds {
+		if firstStat.Time.Sub(stats[i].Time) >= minTimeInterval {
 			secondNewest = &stats[i]
+		}
+		if firstStat.Time.Sub(stats[i].Time) >= sdi.AverageWindowSizeSeconds {
 			break
 		}
 	}
 
 	if secondNewest == nil {
-		return false
+		return false, fmt.Errorf("not enough Stats to detect shortage")
 	}
 
 	// Calculate time difference in seconds
@@ -75,5 +78,5 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() bool {
 		log.Log.Infof("overCommitmentRatioCondition is true")
 		log.Log.Infof(fmt.Sprintf("Debug: overcommitment size:%v condition: %v", firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes, overCommitmentRatioCondition))
 	}
-	return highTrafficCondition || overCommitmentRatioCondition
+	return highTrafficCondition || overCommitmentRatioCondition, nil
 }
