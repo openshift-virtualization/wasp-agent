@@ -91,7 +91,11 @@ func (ctrl *EvictionController) gatherStatistics() (*v1.Node, error) {
 }
 
 func (ctrl *EvictionController) handleMemorySwapEviction() {
-	shouldEvict := ctrl.shortageDetector.ShouldEvict()
+	shouldEvict, err := ctrl.shortageDetector.ShouldEvict()
+	if err != nil {
+		log.Log.Infof(err.Error())
+		return
+	}
 	node, err := ctrl.getNode()
 	if err != nil {
 		log.Log.Infof(err.Error())
