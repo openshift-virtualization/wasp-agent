@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	virtclientset "kubevirt.io/application-aware-quota/pkg/generated/kubevirt/clientset/versioned"
 
 	"net/http"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
@@ -211,6 +213,20 @@ func DeleteNS(c *kubernetes.Clientset, ns string) error {
 		return err
 	}
 	return nil
+}
+
+// GetCrClient returns a controller runtime client
+func (c *Clients) GetCrClient() (crclient.Client, error) {
+	if err := promv1.AddToScheme(scheme.Scheme); err != nil {
+		return nil, err
+	}
+
+	client, err := crclient.New(c.RestConfig, crclient.Options{Scheme: scheme.Scheme})
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 // GetDynamicClient gets an instance of a dynamic client that performs generic operations on arbitrary k8s API objects.
