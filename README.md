@@ -15,30 +15,30 @@ The design can be found in https://github.com/openshift/enhancements/pull/1630
 - Disable swap in the system.slice
 
 ## Wasp Agent: configuring Kubernetes containers
-- Install an OCI hook to enable swap, setting swap=max for every burstable virt-launcher pod.
-
-### Future plans
 - Set a specific amount of swap for each burstable pod to match Kubernetes limited swap settings.
+
+**Please note:** swap configuration will not be done for static pods, mirror pods, or critical system pods based on pod priority.
+
+### Pod selection for eviction
+- Eviction targets non-static pods, mirror pods, or critical system pods based on pod priority.
+  Pods in namespaces beginning with "openshift" or "kube-system" are excluded from eviction.
 
 ## Eviction
 
 ### Swap based eviction signals
-- Utilization - How close are we to run out of swap? (WIP - maybe kubernetes built in signal is good enough)
+- Utilization - How close are we to run out of swap?
 - Traffic - How badly is swapping affecting the system?
 - Overcommit ratio - How over committed is the system?
 
 ### Pod selection for eviction
-- Eviction targets non-static pods, mirror pods, or critical system pods based on pod priority. 
+- Eviction doesn't target static pods, mirror pods, or critical system pods based on pod priority.
   Pods in namespaces beginning with "openshift" or "kube-system" are excluded from eviction.
-- Currently, a "basic" implementation prioritizes pods with "memory" substring in their name.
 
-#### Future plan
-
-- Eviction order:
-  - Exceeding memory resource limits
-  - Exceeding resource requests 
-  - Pod Priority
-  - The pod's resource usage relative to requests
+### Eviction order:
+- Exceeding memory resource limits
+- Exceeding resource requests
+- Pod Priority
+- The pod's resource usage relative to requests
 
 Note: This is inspired by the [Kubernetes eviction order](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/#pod-selection-for-kubelet-eviction)
 , with an additional first criterion.
