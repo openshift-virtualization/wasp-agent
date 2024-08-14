@@ -74,8 +74,6 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 	averageSwapInPerSecond := float32(firstStat.SwapIn-secondNewest.SwapIn) / timeDiffSeconds
 	averageSwapOutPerSecond := float32(firstStat.SwapOut-secondNewest.SwapOut) / timeDiffSeconds
 	highTrafficCondition := averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond && averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond
-	overCommitmentRatioCondition := sdi.maxMemoryOverCommitmentBytes < firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes
-
 	/*
 		log.Log.Infof(fmt.Sprintf("Debug: ______________________________________________________________________________________________________________"))
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
@@ -83,14 +81,19 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 		log.Log.Infof(fmt.Sprintf("Debug: overcommitment size:%v condition: %v", firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes, overCommitmentRatioCondition))
 	*/
 
+	maxVirtualMemory := sdi.totalMemoryBytes + uint64(float64(sdi.totalSwapMemoryBytes)*sdi.swapUtilizationThresholdFactor)
+	usedMemory := sdi.totalMemoryBytes - uint64(firstStat.AvailableMemoryBytes) - uint64(firstStat.InactiveFileBytes)
+	usedVirtualMemory := usedMemory + uint64(firstStat.SwapUsedBytes)
+	highUtilizationCondition := usedVirtualMemory > maxVirtualMemory
+
 	if highTrafficCondition {
 		log.Log.Infof("highTrafficCondition is true")
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapOutPerSecond:%v condition: %v", averageSwapOutPerSecond, averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond))
 	}
-	if overCommitmentRatioCondition {
-		log.Log.Infof("overCommitmentRatioCondition is true")
-		log.Log.Infof(fmt.Sprintf("Debug: overcommitment size:%v condition: %v", firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes, overCommitmentRatioCondition))
+	if highUtilizationCondition {
+		log.Log.Infof("highUtilizationCondition is true")
+		log.Log.Infof(fmt.Sprintf("Debug: utilization size:%v ", usedVirtualMemory))
 	}
-	return highTrafficCondition || overCommitmentRatioCondition, nil
+	return highTrafficCondition || highUtilizationCondition, nil
 }
