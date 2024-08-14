@@ -48,6 +48,7 @@ type WaspApp struct {
 	cli                             client.WaspClient
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
+	swapUtilizationThresholdFactor  float64
 	AverageWindowSizeSeconds        time.Duration
 	waspNs                          string
 	nodeName                        string
@@ -66,6 +67,7 @@ func Execute() {
 	maxAverageSwapInPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND")
 	maxAverageSwapOutPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND")
 	AverageWindowSizeSeconds := os.Getenv("AVERAGE_WINDOW_SIZE_SECONDS")
+	swapUtilizationThresholdFactor := os.Getenv("SWAP_UTILIZATION_THRESHOLD_FACTOR")
 	app.nodeName = os.Getenv("NODE_NAME")
 	app.fsRoot = os.Getenv("FSROOT")
 
@@ -98,6 +100,12 @@ func Execute() {
 	}
 	app.maxAverageSwapOutPagesPerSecond = float32(maxSwapOutRateToConvert)
 
+	utilizationFactor, err := strconv.ParseFloat(swapUtilizationThresholdFactor, 64)
+	if err != nil {
+		panic(err)
+	}
+	app.swapUtilizationThresholdFactor = float64(utilizationFactor)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	app.ctx = ctx
@@ -118,6 +126,7 @@ func Execute() {
 		"MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND:%v "+
 		"MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND:%v "+
 		"AVERAGE_WINDOW_SIZE_SECONDS:%v "+
+		"SWAP_UTILIZATION_THRESHOLD_FACTOR: %v"+
 		"nodeName: %v "+
 		"ns: %v "+
 		"fsRoot: %v",
@@ -125,6 +134,7 @@ func Execute() {
 		app.maxAverageSwapInPagesPerSecond,
 		app.maxAverageSwapOutPagesPerSecond,
 		app.AverageWindowSizeSeconds,
+		app.swapUtilizationThresholdFactor,
 		app.nodeName,
 		app.waspNs,
 		app.fsRoot,
@@ -144,6 +154,7 @@ func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
 		waspapp.nodeName,
 		waspapp.maxAverageSwapInPagesPerSecond,
 		waspapp.maxAverageSwapOutPagesPerSecond,
+		waspapp.swapUtilizationThresholdFactor,
 		waspapp.maxMemoryOverCommitmentBytes,
 		waspapp.AverageWindowSizeSeconds,
 		waspapp.waspNs,

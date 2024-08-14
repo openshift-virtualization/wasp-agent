@@ -61,6 +61,7 @@ var (
 	maxAverageSwapOutPagesPerSecond = flag.String("max-average-swapout-pages-per-second", "", "")
 	averageWindowSizeSeconds        = flag.String("average-window-size-seconds", "", "")
 	MemoryAvailableThreshold        = flag.String("memory-over-commitment-threshold", "", "")
+	SwapUtilizationThresholdFactor  = flag.String("swap-utilization-threshold-factor", "", "")
 )
 
 func main() {
@@ -175,6 +176,7 @@ func getOperatorResources(resourceGroup string) ([]client.Object, error) {
 			MaxAverageSwapOutPagesPerSecond: *maxAverageSwapOutPagesPerSecond,
 			AverageWindowSizeSeconds:        *averageWindowSizeSeconds,
 			MemoryAvailableThreshold:        *MemoryAvailableThreshold,
+			SwapUtilizationThresholdFactor:  *SwapUtilizationThresholdFactor,
 		},
 		Image: *operatorImage,
 	}

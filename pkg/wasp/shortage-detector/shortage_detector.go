@@ -5,6 +5,7 @@ import (
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	"time"
+	//	"github.com/shirou/gopsutil/mem"
 )
 
 // ShortageDetector is an interface for shortage detection
@@ -16,15 +17,22 @@ type ShortageDetectorImpl struct {
 	sc                              stats_collector.StatsCollector
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
+	swapUtilizationThresholdFactor  float64
 	maxMemoryOverCommitmentBytes    int64
 	AverageWindowSizeSeconds        time.Duration
 }
 
-func NewShortageDetectorImpl(sc stats_collector.StatsCollector, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond float32, maxMemoryOverCommitmentBytes int64, AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
+func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
+	maxAverageSwapInPagesPerSecond,
+	maxAverageSwapOutPagesPerSecond float32,
+	swapUtilizationThresholdFactor float64,
+	maxMemoryOverCommitmentBytes int64,
+	AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
 	return &ShortageDetectorImpl{
 		sc:                              sc,
 		maxAverageSwapInPagesPerSecond:  maxAverageSwapInPagesPerSecond,
 		maxAverageSwapOutPagesPerSecond: maxAverageSwapOutPagesPerSecond,
+		swapUtilizationThresholdFactor:  swapUtilizationThresholdFactor,
 		maxMemoryOverCommitmentBytes:    maxMemoryOverCommitmentBytes,
 		AverageWindowSizeSeconds:        AverageWindowSizeSeconds,
 	}

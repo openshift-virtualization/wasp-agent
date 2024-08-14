@@ -95,6 +95,7 @@ func createPrometheusRule(args *FactoryArgs) []client.Object {
 func createDaemonSet(args *FactoryArgs) []client.Object {
 	return []client.Object{
 		createWaspDaemonSet(args.NamespacedArgs.Namespace,
+			args.NamespacedArgs.SwapUtilizationThresholdFactor,
 			args.NamespacedArgs.MaxAverageSwapInPagesPerSecond,
 			args.NamespacedArgs.MemoryAvailableThreshold,
 			args.NamespacedArgs.MaxAverageSwapOutPagesPerSecond,
@@ -105,8 +106,17 @@ func createDaemonSet(args *FactoryArgs) []client.Object {
 	}
 }
 
-func createDaemonSetEnvVar(maxAverageSwapInPerSecond, memoryMaxThreshold, maxAverageSwapOutPerSecond, averageWindowSizeSeconds, verbosity string) []corev1.EnvVar {
+func createDaemonSetEnvVar(swapUtilizationThresholdFactor,
+	maxAverageSwapInPerSecond,
+	memoryMaxThreshold,
+	maxAverageSwapOutPerSecond,
+	averageWindowSizeSeconds,
+	verbosity string) []corev1.EnvVar {
 	return []corev1.EnvVar{
+		{
+			Name:  "SWAP_UTILIZATION_THRESHOLD_FACTOR",
+			Value: swapUtilizationThresholdFactor,
+		},
 		{
 			Name:  "MEMORY_OVER_COMMITMENT_THRESHOLD",
 			Value: memoryMaxThreshold,
@@ -142,7 +152,15 @@ func createDaemonSetEnvVar(maxAverageSwapInPerSecond, memoryMaxThreshold, maxAve
 	}
 }
 
-func createWaspDaemonSet(namespace, maxAverageSwapInPagesPerSecond, memoryMaxThreshold, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity, waspImage, pullPolicy string) *appsv1.DaemonSet {
+func createWaspDaemonSet(namespace,
+	swapUtilizationThresholdFactor,
+	maxAverageSwapInPagesPerSecond,
+	memoryMaxThreshold,
+	maxAverageSwapOutPagesPerSecond,
+	averageWindowSizeSeconds,
+	verbosity,
+	waspImage,
+	pullPolicy string) *appsv1.DaemonSet {
 	container := corev1.Container{
 		Name:            "wasp-agent",
 		Image:           waspImage,
@@ -167,7 +185,12 @@ func createWaspDaemonSet(namespace, maxAverageSwapInPagesPerSecond, memoryMaxThr
 			},
 		},
 	}
-	container.Env = createDaemonSetEnvVar(maxAverageSwapInPagesPerSecond, memoryMaxThreshold, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity)
+	container.Env = createDaemonSetEnvVar(swapUtilizationThresholdFactor,
+		maxAverageSwapInPagesPerSecond,
+		memoryMaxThreshold,
+		maxAverageSwapOutPagesPerSecond,
+		averageWindowSizeSeconds,
+		verbosity)
 
 	labels := resources.WithLabels(map[string]string{"name": "wasp"}, utils2.DaemonSetLabels)
 	ds := &appsv1.DaemonSet{

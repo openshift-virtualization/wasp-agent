@@ -4,6 +4,7 @@ package args
 type FactoryArgs struct {
 	MaxAverageSwapInPagesPerSecond  string `required:"true" split_words:"true"`
 	MemoryAvailableThreshold        string `required:"true" split_words:"true"`
+	SwapUtilizationThresholdFactor  string `required:"true" split_words:"true"`
 	MaxAverageSwapOutPagesPerSecond string `required:"true" split_words:"true"`
 	OperatorVersion                 string `required:"true" split_words:"true"`
 	WaspImage                       string `required:"true" split_words:"true"`
