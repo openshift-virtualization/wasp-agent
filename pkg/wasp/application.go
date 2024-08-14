@@ -169,7 +169,9 @@ func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
 		waspapp.maxAverageSwapOutPagesPerSecond,
 		waspapp.swapUtilizationThresholdFactor,
 		waspapp.maxMemoryOverCommitmentBytes.Value(),
-		waspapp.AverageWindowSizeSeconds)
+		waspapp.AverageWindowSizeSeconds,
+		waspapp.totalMemoryBytes,
+		waspapp.totalSwapMemoryBytes)
 
 	waspapp.evictionController = eviction_controller.NewEvictionController(waspapp.cli,
 		waspapp.podStatsCollector,

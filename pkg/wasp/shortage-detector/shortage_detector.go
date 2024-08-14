@@ -20,6 +20,8 @@ type ShortageDetectorImpl struct {
 	swapUtilizationThresholdFactor  float64
 	maxMemoryOverCommitmentBytes    int64
 	AverageWindowSizeSeconds        time.Duration
+	totalSwapMemoryBytes            uint64
+	totalMemoryBytes                uint64
 }
 
 func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
@@ -27,7 +29,9 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
 	maxAverageSwapOutPagesPerSecond float32,
 	swapUtilizationThresholdFactor float64,
 	maxMemoryOverCommitmentBytes int64,
-	AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
+	AverageWindowSizeSeconds time.Duration,
+	totalMemoryBytes uint64,
+	totalSwapMemoryBytes uint64) *ShortageDetectorImpl {
 	return &ShortageDetectorImpl{
 		sc:                              sc,
 		maxAverageSwapInPagesPerSecond:  maxAverageSwapInPagesPerSecond,
@@ -35,6 +39,8 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
 		swapUtilizationThresholdFactor:  swapUtilizationThresholdFactor,
 		maxMemoryOverCommitmentBytes:    maxMemoryOverCommitmentBytes,
 		AverageWindowSizeSeconds:        AverageWindowSizeSeconds,
+		totalMemoryBytes:                totalMemoryBytes,
+		totalSwapMemoryBytes:            totalSwapMemoryBytes,
 	}
 }
 
