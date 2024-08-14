@@ -12,7 +12,6 @@ import (
 	shortage_detector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/shortage-detector"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
@@ -45,20 +44,16 @@ type EvictionController struct {
 
 func NewEvictionController(waspCli client.WaspClient,
 	podStatsCollector stats_collector.PodStatsCollector,
+	sc stats_collector.StatsCollector,
+	shortageDetector shortage_detector.ShortageDetector,
 	podInformer cache.SharedIndexInformer,
 	nodeInformer cache.SharedIndexInformer,
 	nodeName string,
-	maxAverageSwapInPagesPerSecond float32,
-	maxAverageSwapOutPagesPerSecond float32,
-	swapUtilizationThresholdFactor float64,
-	maxMemoryOverCommitmentBytes resource.Quantity,
-	AverageWindowSizeSeconds time.Duration,
 	waspNs string,
 	stop <-chan struct{}) *EvictionController {
-	sc := stats_collector.NewStatsCollectorImpl()
 	ctrl := &EvictionController{
 		statsCollector:   sc,
-		shortageDetector: shortage_detector.NewShortageDetectorImpl(sc, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, swapUtilizationThresholdFactor, maxMemoryOverCommitmentBytes.Value(), AverageWindowSizeSeconds),
+		shortageDetector: shortageDetector,
 		nodeName:         nodeName,
 		waspCli:          waspCli,
 		podEvictor:       pod_evictor.NewPodEvictorImpl(waspCli),

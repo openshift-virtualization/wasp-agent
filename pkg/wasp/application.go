@@ -27,7 +27,9 @@ import (
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	eviction_controller "github.com/openshift-virtualization/wasp-agent/pkg/wasp/eviction-controller"
 	limited_swap_manager "github.com/openshift-virtualization/wasp-agent/pkg/wasp/limited-swap-manager"
+	shortage_detector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/shortage-detector"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
+	"github.com/shirou/gopsutil/mem"
 	"io"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/tools/cache"
@@ -53,6 +55,8 @@ type WaspApp struct {
 	waspNs                          string
 	nodeName                        string
 	fsRoot                          string
+	totalSwapMemoryBytes            uint64
+	totalMemoryBytes                uint64
 }
 
 func Execute() {
@@ -106,6 +110,18 @@ func Execute() {
 	}
 	app.swapUtilizationThresholdFactor = float64(utilizationFactor)
 
+	memStat, err := mem.VirtualMemory()
+	if err != nil {
+		panic(err)
+	}
+	app.totalMemoryBytes = memStat.Total
+
+	swapMemStat, err := mem.SwapMemory()
+	if err != nil {
+		panic(err)
+	}
+	app.totalSwapMemoryBytes = swapMemStat.Total
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	app.ctx = ctx
@@ -147,20 +163,25 @@ func Execute() {
 }
 
 func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
-	waspapp.evictionController = eviction_controller.NewEvictionController(waspapp.cli,
-		waspapp.podStatsCollector,
-		waspapp.podInformer,
-		waspapp.nodeInformer,
-		waspapp.nodeName,
+	sc := stats_collector.NewStatsCollectorImpl()
+	shortageDetector := shortage_detector.NewShortageDetectorImpl(sc,
 		waspapp.maxAverageSwapInPagesPerSecond,
 		waspapp.maxAverageSwapOutPagesPerSecond,
 		waspapp.swapUtilizationThresholdFactor,
-		waspapp.maxMemoryOverCommitmentBytes,
-		waspapp.AverageWindowSizeSeconds,
+		waspapp.maxMemoryOverCommitmentBytes.Value(),
+		waspapp.AverageWindowSizeSeconds)
+
+	waspapp.evictionController = eviction_controller.NewEvictionController(waspapp.cli,
+		waspapp.podStatsCollector,
+		sc,
+		shortageDetector,
+		waspapp.podInformer,
+		waspapp.nodeInformer,
+		waspapp.nodeName,
 		waspapp.waspNs,
-		stop,
-	)
+		stop)
 }
+
 func (waspapp *WaspApp) initLimitedSwapManager(stop <-chan struct{}) {
 	waspapp.limitesSwapManager = limited_swap_manager.NewLimitedSwapManager(waspapp.cli,
 		waspapp.podInformer,
