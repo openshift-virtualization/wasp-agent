@@ -118,10 +118,6 @@ func createDaemonSetEnvVar(swapUtilizationThresholdFactor,
 			Value: swapUtilizationThresholdFactor,
 		},
 		{
-			Name:  "MEMORY_OVER_COMMITMENT_THRESHOLD",
-			Value: memoryMaxThreshold,
-		},
-		{
 			Name:  "MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND",
 			Value: maxAverageSwapInPerSecond,
 		},

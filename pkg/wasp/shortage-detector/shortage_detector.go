@@ -18,7 +18,6 @@ type ShortageDetectorImpl struct {
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
 	swapUtilizationThresholdFactor  float64
-	maxMemoryOverCommitmentBytes    int64
 	AverageWindowSizeSeconds        time.Duration
 	totalSwapMemoryBytes            uint64
 	totalMemoryBytes                uint64
@@ -28,7 +27,6 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
 	maxAverageSwapInPagesPerSecond,
 	maxAverageSwapOutPagesPerSecond float32,
 	swapUtilizationThresholdFactor float64,
-	maxMemoryOverCommitmentBytes int64,
 	AverageWindowSizeSeconds time.Duration,
 	totalMemoryBytes uint64,
 	totalSwapMemoryBytes uint64) *ShortageDetectorImpl {
@@ -37,7 +35,6 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
 		maxAverageSwapInPagesPerSecond:  maxAverageSwapInPagesPerSecond,
 		maxAverageSwapOutPagesPerSecond: maxAverageSwapOutPagesPerSecond,
 		swapUtilizationThresholdFactor:  swapUtilizationThresholdFactor,
-		maxMemoryOverCommitmentBytes:    maxMemoryOverCommitmentBytes,
 		AverageWindowSizeSeconds:        AverageWindowSizeSeconds,
 		totalMemoryBytes:                totalMemoryBytes,
 		totalSwapMemoryBytes:            totalSwapMemoryBytes,
@@ -93,6 +90,12 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 	}
 	if highUtilizationCondition {
 		log.Log.Infof("highUtilizationCondition is true")
+		log.Log.Infof(fmt.Sprintf("Debug: total memory bytes :%v ", sdi.totalMemoryBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: total swap bytes :%v ", sdi.totalSwapMemoryBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: utilization factor :%v ", sdi.swapUtilizationThresholdFactor))
+		log.Log.Infof(fmt.Sprintf("Debug: available memory bytes :%v ", firstStat.AvailableMemoryBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: inactive file bytes :%v ", firstStat.InactiveFileBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: swap used bytes :%v ", firstStat.SwapUsedBytes))
 		log.Log.Infof(fmt.Sprintf("Debug: utilization size:%v ", usedVirtualMemory))
 	}
 	return highTrafficCondition || highUtilizationCondition, nil
