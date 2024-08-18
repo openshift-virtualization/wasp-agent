@@ -79,24 +79,27 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 	*/
 
 	maxVirtualMemory := sdi.totalMemoryBytes + uint64(float64(sdi.totalSwapMemoryBytes)*sdi.swapUtilizationThresholdFactor)
-	usedMemory := sdi.totalMemoryBytes - uint64(firstStat.AvailableMemoryBytes) - uint64(firstStat.InactiveFileBytes)
+	//usedMemory := sdi.totalMemoryBytes - uint64(firstStat.AvailableMemoryBytes) - uint64(firstStat.InactiveFileBytes)
+	usedMemory := sdi.totalMemoryBytes - firstStat.Free - firstStat.Buffers - firstStat.Cache
 	usedVirtualMemory := usedMemory + uint64(firstStat.SwapUsedBytes)
 	highUtilizationCondition := usedVirtualMemory > maxVirtualMemory
+
+	log.Log.Infof(fmt.Sprintf("Debug: total memory bytes :%v ", sdi.totalMemoryBytes))
+	log.Log.Infof(fmt.Sprintf("Debug: total swap bytes :%v ", sdi.totalSwapMemoryBytes))
+	log.Log.Infof(fmt.Sprintf("Debug: utilization factor :%v ", sdi.swapUtilizationThresholdFactor))
+	log.Log.Infof(fmt.Sprintf("Debug: available memory bytes :%v ", firstStat.AvailableMemoryBytes))
+	log.Log.Infof(fmt.Sprintf("Debug: inactive file bytes :%v ", firstStat.InactiveFileBytes))
+	log.Log.Infof(fmt.Sprintf("Debug: swap used bytes :%v ", firstStat.SwapUsedBytes))
+	log.Log.Infof(fmt.Sprintf("Debug: free bytes :%v ", firstStat.Free))
+	log.Log.Infof(fmt.Sprintf("Debug: buffered bytes :%v ", firstStat.Buffers))
+	log.Log.Infof(fmt.Sprintf("Debug: cached bytes :%v ", firstStat.Cache))
+	log.Log.Infof(fmt.Sprintf("Debug: utilization size:%v ", usedVirtualMemory))
 
 	if highTrafficCondition {
 		log.Log.Infof("highTrafficCondition is true")
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapOutPerSecond:%v condition: %v", averageSwapOutPerSecond, averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond))
 	}
-	if highUtilizationCondition {
-		log.Log.Infof("highUtilizationCondition is true")
-		log.Log.Infof(fmt.Sprintf("Debug: total memory bytes :%v ", sdi.totalMemoryBytes))
-		log.Log.Infof(fmt.Sprintf("Debug: total swap bytes :%v ", sdi.totalSwapMemoryBytes))
-		log.Log.Infof(fmt.Sprintf("Debug: utilization factor :%v ", sdi.swapUtilizationThresholdFactor))
-		log.Log.Infof(fmt.Sprintf("Debug: available memory bytes :%v ", firstStat.AvailableMemoryBytes))
-		log.Log.Infof(fmt.Sprintf("Debug: inactive file bytes :%v ", firstStat.InactiveFileBytes))
-		log.Log.Infof(fmt.Sprintf("Debug: swap used bytes :%v ", firstStat.SwapUsedBytes))
-		log.Log.Infof(fmt.Sprintf("Debug: utilization size:%v ", usedVirtualMemory))
-	}
+
 	return highTrafficCondition || highUtilizationCondition, nil
 }

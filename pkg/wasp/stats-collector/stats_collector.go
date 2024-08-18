@@ -18,6 +18,9 @@ type Stats struct {
 	AvailableMemoryBytes int64
 	InactiveFileBytes    int64
 	SwapUsedBytes        int64
+	Free                 uint64
+	Buffers              uint64
+	Cache                uint64
 	SwapIn               uint64
 	SwapOut              uint64
 	Time                 time.Time
@@ -59,6 +62,9 @@ func (sc *StatsCollectorImpl) GatherStats() {
 		SwapIn:               swap.Sin,
 		SwapOut:              swap.Sout,
 		SwapUsedBytes:        int64(swap.Used),
+		Free:                 virtualMem.Free,
+		Buffers:              virtualMem.Buffers,
+		Cache:                virtualMem.Cached,
 		Time:                 time.Now(),
 		AvailableMemoryBytes: int64(virtualMem.Available),
 		InactiveFileBytes:    int64(virtualMemEx.InactiveFile),
