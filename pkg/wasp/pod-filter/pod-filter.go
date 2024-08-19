@@ -17,7 +17,9 @@ type PodFilterImpl struct {
 }
 
 func NewPodFilterImpl(waspNs string) *PodFilterImpl {
-	return &PodFilterImpl{}
+	return &PodFilterImpl{
+		waspNs: waspNs,
+	}
 }
 
 func (pr *PodFilterImpl) FilterPods(pods []*v1.Pod) []*v1.Pod {
