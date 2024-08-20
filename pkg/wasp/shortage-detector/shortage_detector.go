@@ -16,16 +16,14 @@ type ShortageDetectorImpl struct {
 	sc                              stats_collector.StatsCollector
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
-	maxMemoryOverCommitmentBytes    int64
 	AverageWindowSizeSeconds        time.Duration
 }
 
-func NewShortageDetectorImpl(sc stats_collector.StatsCollector, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond float32, maxMemoryOverCommitmentBytes int64, AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
+func NewShortageDetectorImpl(sc stats_collector.StatsCollector, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond float32, AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
 	return &ShortageDetectorImpl{
 		sc:                              sc,
 		maxAverageSwapInPagesPerSecond:  maxAverageSwapInPagesPerSecond,
 		maxAverageSwapOutPagesPerSecond: maxAverageSwapOutPagesPerSecond,
-		maxMemoryOverCommitmentBytes:    maxMemoryOverCommitmentBytes,
 		AverageWindowSizeSeconds:        AverageWindowSizeSeconds,
 	}
 }
@@ -60,7 +58,6 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 	averageSwapInPerSecond := float32(firstStat.SwapIn-secondNewest.SwapIn) / timeDiffSeconds
 	averageSwapOutPerSecond := float32(firstStat.SwapOut-secondNewest.SwapOut) / timeDiffSeconds
 	highTrafficCondition := averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond && averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond
-	overCommitmentRatioCondition := sdi.maxMemoryOverCommitmentBytes < firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes
 
 	/*
 		log.Log.Infof(fmt.Sprintf("Debug: ______________________________________________________________________________________________________________"))
@@ -74,9 +71,5 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapOutPerSecond:%v condition: %v", averageSwapOutPerSecond, averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond))
 	}
-	if overCommitmentRatioCondition {
-		log.Log.Infof("overCommitmentRatioCondition is true")
-		log.Log.Infof(fmt.Sprintf("Debug: overcommitment size:%v condition: %v", firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes, overCommitmentRatioCondition))
-	}
-	return highTrafficCondition || overCommitmentRatioCondition, nil
+	return highTrafficCondition, nil
 }

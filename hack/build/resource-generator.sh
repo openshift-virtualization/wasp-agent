@@ -47,7 +47,6 @@ function generateResourceManifest() {
             -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
             -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
             -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
-            -memory-over-commitment-threshold="${MEMORY_OVER_COMMITMENT_THRESHOLD}" \
             -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}"
     ) 1>>"${targetDir}/"$manifestName
     (
@@ -64,7 +63,6 @@ function generateResourceManifest() {
             -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
             -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
             -average-window-size-seconds="{{ average_window_size_seconds }}" \
-            -memory-over-commitment-threshold="${MEMORY_OVER_COMMITMENT_THRESHOLD}" \
             -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}"
     ) 1>>"${targetDir}/"$manifestNamej2
 
@@ -127,7 +125,6 @@ function populateResourceManifest() {
             -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
             -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
             -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
-            -memory-over-commitment-threshold="${MEMORY_OVER_COMMITMENT_THRESHOLD}" \
             -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}" \
             -generated-manifests-path=${generatedManifests}
     ) 1>>"${targetDir}/"$outfile
@@ -146,7 +143,6 @@ function populateResourceManifest() {
             -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
             -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
             -average-window-size-seconds="{{ average_window_size_seconds }}" \
-            -memory-over-commitment-threshold="{{ memory_over_commitment_threshold }}" \
             -generated-manifests-path=${generatedManifests}
     ) 1>>"${tmplTargetDir}/"$outfile".j2"
 
