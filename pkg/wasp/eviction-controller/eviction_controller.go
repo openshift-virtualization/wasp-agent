@@ -47,15 +47,14 @@ func NewEvictionController(waspCli client.WaspClient,
 	podInformer cache.SharedIndexInformer,
 	nodeInformer cache.SharedIndexInformer,
 	nodeName string,
-	maxAverageSwapInPagesPerSecond float32,
-	maxAverageSwapOutPagesPerSecond float32,
-	AverageWindowSizeSeconds time.Duration,
 	waspNs string,
-	stop <-chan struct{}) *EvictionController {
-	sc := stats_collector.NewStatsCollectorImpl()
+	stop <-chan struct{},
+	sd shortage_detector.ShortageDetector,
+	sc stats_collector.StatsCollector) *EvictionController {
+
 	ctrl := &EvictionController{
 		statsCollector:   sc,
-		shortageDetector: shortage_detector.NewShortageDetectorImpl(sc, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, AverageWindowSizeSeconds),
+		shortageDetector: sd,
 		nodeName:         nodeName,
 		waspCli:          waspCli,
 		podEvictor:       pod_evictor.NewPodEvictorImpl(waspCli),

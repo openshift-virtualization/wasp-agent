@@ -27,6 +27,7 @@ import (
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	eviction_controller "github.com/openshift-virtualization/wasp-agent/pkg/wasp/eviction-controller"
 	limited_swap_manager "github.com/openshift-virtualization/wasp-agent/pkg/wasp/limited-swap-manager"
+	shortage_detector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/shortage-detector"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	"io"
 	"k8s.io/client-go/tools/cache"
@@ -127,16 +128,23 @@ func Execute() {
 }
 
 func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
+	sc := stats_collector.NewStatsCollectorImpl()
+	shortageDetector := shortage_detector.NewShortageDetectorImpl(sc,
+		waspapp.podStatsCollector,
+		waspapp.maxAverageSwapInPagesPerSecond,
+		waspapp.maxAverageSwapOutPagesPerSecond,
+		waspapp.AverageWindowSizeSeconds,
+	)
+
 	waspapp.evictionController = eviction_controller.NewEvictionController(waspapp.cli,
 		waspapp.podStatsCollector,
 		waspapp.podInformer,
 		waspapp.nodeInformer,
 		waspapp.nodeName,
-		waspapp.maxAverageSwapInPagesPerSecond,
-		waspapp.maxAverageSwapOutPagesPerSecond,
-		waspapp.AverageWindowSizeSeconds,
 		waspapp.waspNs,
 		stop,
+		shortageDetector,
+		sc,
 	)
 }
 func (waspapp *WaspApp) initLimitedSwapManager(stop <-chan struct{}) {

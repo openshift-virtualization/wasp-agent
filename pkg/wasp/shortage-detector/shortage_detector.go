@@ -14,14 +14,20 @@ type ShortageDetector interface {
 
 type ShortageDetectorImpl struct {
 	sc                              stats_collector.StatsCollector
+	psc                             stats_collector.PodStatsCollector
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
 	AverageWindowSizeSeconds        time.Duration
 }
 
-func NewShortageDetectorImpl(sc stats_collector.StatsCollector, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond float32, AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
+func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
+	psc stats_collector.PodStatsCollector,
+	maxAverageSwapInPagesPerSecond,
+	maxAverageSwapOutPagesPerSecond float32,
+	AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
 	return &ShortageDetectorImpl{
 		sc:                              sc,
+		psc:                             psc,
 		maxAverageSwapInPagesPerSecond:  maxAverageSwapInPagesPerSecond,
 		maxAverageSwapOutPagesPerSecond: maxAverageSwapOutPagesPerSecond,
 		AverageWindowSizeSeconds:        AverageWindowSizeSeconds,
