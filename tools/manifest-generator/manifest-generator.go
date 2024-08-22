@@ -60,6 +60,7 @@ var (
 	maxAverageSwapInPagesPerSecond  = flag.String("max-average-swapin-pages-per-second", "", "")
 	maxAverageSwapOutPagesPerSecond = flag.String("max-average-swapout-pages-per-second", "", "")
 	averageWindowSizeSeconds        = flag.String("average-window-size-seconds", "", "")
+	swapUtilizationThresholdFactor  = flag.String("swap-utilization-threshold-factor", "", "")
 )
 
 func main() {
@@ -173,6 +174,7 @@ func getOperatorResources(resourceGroup string) ([]client.Object, error) {
 			MaxAverageSwapInPagesPerSecond:  *maxAverageSwapInPagesPerSecond,
 			MaxAverageSwapOutPagesPerSecond: *maxAverageSwapOutPagesPerSecond,
 			AverageWindowSizeSeconds:        *averageWindowSizeSeconds,
+			SwapUtilizationThresholdFactor:  *swapUtilizationThresholdFactor,
 		},
 		Image: *operatorImage,
 	}

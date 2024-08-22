@@ -47,6 +47,7 @@ type WaspApp struct {
 	cli                             client.WaspClient
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
+	swapUtilizationThresholdFactor  float64
 	AverageWindowSizeSeconds        time.Duration
 	waspNs                          string
 	nodeName                        string
@@ -61,6 +62,7 @@ func Execute() {
 	setOCIHook()
 
 	var app = WaspApp{}
+	swapUtilizationThresholdFactorStr := os.Getenv("SWAP_UTILIZATION_THRESHOLD_FACTOR")
 	maxAverageSwapInPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND")
 	maxAverageSwapOutPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND")
 	AverageWindowSizeSeconds := os.Getenv("AVERAGE_WINDOW_SIZE_SECONDS")
@@ -91,6 +93,12 @@ func Execute() {
 	}
 	app.maxAverageSwapOutPagesPerSecond = float32(maxSwapOutRateToConvert)
 
+	swapUtilizationThresholdFactor, err := strconv.ParseFloat(swapUtilizationThresholdFactorStr, 64)
+	if err != nil {
+		panic(err)
+	}
+	app.swapUtilizationThresholdFactor = swapUtilizationThresholdFactor
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	app.ctx = ctx
@@ -107,12 +115,14 @@ func Execute() {
 	app.podInformer = informers.GetPodInformer(app.cli)
 	app.nodeInformer = informers.GetNodeInformer(app.cli)
 
-	log.Log.Infof("MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND:%v "+
+	log.Log.Infof("SWAP_UTILIZATION_THRESHOLD_FACTOR:%v "+
+		"MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND:%v "+
 		"MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND:%v "+
 		"AVERAGE_WINDOW_SIZE_SECONDS:%v "+
 		"nodeName: %v "+
 		"ns: %v "+
 		"fsRoot: %v",
+		app.swapUtilizationThresholdFactor,
 		app.maxAverageSwapInPagesPerSecond,
 		app.maxAverageSwapOutPagesPerSecond,
 		app.AverageWindowSizeSeconds,

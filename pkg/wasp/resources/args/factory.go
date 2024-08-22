@@ -2,6 +2,7 @@ package args
 
 // FactoryArgs contains the required parameters to generate all namespaced resources
 type FactoryArgs struct {
+	SwapUtilizationThresholdFactor  string `required:"true" split_words:"true"`
 	MaxAverageSwapInPagesPerSecond  string `required:"true" split_words:"true"`
 	MaxAverageSwapOutPagesPerSecond string `required:"true" split_words:"true"`
 	OperatorVersion                 string `required:"true" split_words:"true"`
