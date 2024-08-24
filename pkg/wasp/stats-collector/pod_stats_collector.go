@@ -68,18 +68,30 @@ func (psc *PodStatsCollectorImpl) GetRootSummary() (NodeSummary, error) {
 	}
 
 	info := infoMap[nodeRootCgroupName]
-	ctats := cadvisorInfoToContainerStats(nodeRootCgroupName, &info, nil, nil)
+	cstats := cadvisorInfoToContainerStats(nodeRootCgroupName, &info, nil, nil)
 	summary := NodeSummary{
 		TotalMemoryBytes: info.Spec.Memory.Limit,
 		TotalSwapBytes:   info.Spec.Memory.SwapLimit,
 	}
 
-	if ctats.Memory.WorkingSetBytes != nil {
-		summary.WorkingSetBytes = *ctats.Memory.WorkingSetBytes
+	if cstats.Memory == nil {
+		return NodeSummary{}, fmt.Errorf("Memory stats return nil")
 	}
 
-	if ctats.Memory.AvailableBytes != nil {
-		summary.AvailableBytes = *ctats.Memory.AvailableBytes
+	if cstats.Swap == nil {
+		return NodeSummary{}, fmt.Errorf("Swap stats return nil")
+	}
+
+	if cstats.Memory.WorkingSetBytes != nil {
+		summary.WorkingSetBytes = *cstats.Memory.WorkingSetBytes
+	}
+
+	if cstats.Memory.AvailableBytes != nil {
+		summary.AvailableBytes = *cstats.Memory.AvailableBytes
+	}
+
+	if cstats.Swap.SwapUsageBytes != nil {
+		summary.SwapUsedBytes = *cstats.Swap.SwapUsageBytes
 	}
 
 	return summary, nil

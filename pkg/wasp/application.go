@@ -143,6 +143,7 @@ func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
 		waspapp.podStatsCollector,
 		waspapp.maxAverageSwapInPagesPerSecond,
 		waspapp.maxAverageSwapOutPagesPerSecond,
+		waspapp.swapUtilizationThresholdFactor,
 		waspapp.AverageWindowSizeSeconds,
 	)
 

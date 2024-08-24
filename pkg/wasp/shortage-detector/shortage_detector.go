@@ -17,6 +17,7 @@ type ShortageDetectorImpl struct {
 	psc                             stats_collector.PodStatsCollector
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
+	swapUtilizationThresholdFactor  float64
 	AverageWindowSizeSeconds        time.Duration
 }
 
@@ -24,6 +25,7 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
 	psc stats_collector.PodStatsCollector,
 	maxAverageSwapInPagesPerSecond,
 	maxAverageSwapOutPagesPerSecond float32,
+	swapUtilizationThresholdFactor float64,
 	AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
 	return &ShortageDetectorImpl{
 		sc:                              sc,
@@ -31,6 +33,7 @@ func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
 		maxAverageSwapInPagesPerSecond:  maxAverageSwapInPagesPerSecond,
 		maxAverageSwapOutPagesPerSecond: maxAverageSwapOutPagesPerSecond,
 		AverageWindowSizeSeconds:        AverageWindowSizeSeconds,
+		swapUtilizationThresholdFactor:  swapUtilizationThresholdFactor,
 	}
 }
 
@@ -65,6 +68,12 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 	averageSwapOutPerSecond := float32(firstStat.SwapOut-secondNewest.SwapOut) / timeDiffSeconds
 	highTrafficCondition := averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond && averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond
 
+	nodeSummary, err := sdi.psc.GetRootSummary()
+	if err != nil {
+		return false, err
+	}
+	highSwapUtilization := sdi.swapUtilizationThresholdMet(&nodeSummary)
+
 	/*
 		log.Log.Infof(fmt.Sprintf("Debug: ______________________________________________________________________________________________________________"))
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
@@ -77,5 +86,28 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapOutPerSecond:%v condition: %v", averageSwapOutPerSecond, averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond))
 	}
-	return highTrafficCondition, nil
+
+	if highSwapUtilization {
+		log.Log.Infof("highSwapUtilization is true")
+		log.Log.Infof(fmt.Sprintf("Debug: TotalSwapBytes %v", nodeSummary.TotalSwapBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: TotalMemoryBytes %v", nodeSummary.TotalMemoryBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: WorkingSetBytes %v", nodeSummary.WorkingSetBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: SwapUsedBytes %v", nodeSummary.SwapUsedBytes))
+	}
+	
+	return highTrafficCondition || highSwapUtilization, nil
+}
+
+func (sdi *ShortageDetectorImpl) swapUtilizationThresholdMet(nodeSummary *stats_collector.NodeSummary) bool {
+	factoredSwap := float64(nodeSummary.TotalSwapBytes) * sdi.swapUtilizationThresholdFactor
+	capacity := float64(nodeSummary.TotalMemoryBytes) + factoredSwap
+	usedVirtualmemory := nodeSummary.WorkingSetBytes + nodeSummary.SwapUsedBytes
+	log.Log.V(4).Info(fmt.Sprintf("Debug: nodeSummary.TotalSwapBytes %v nodeSummary.TotalMemoryBytes %v ",
+		nodeSummary.TotalSwapBytes,
+		nodeSummary.TotalMemoryBytes))
+	log.Log.V(4).Info(fmt.Sprintf("Debug: nodeSummary.WorkingSetBytes %v nodeSummary.SwapUsedBytes %v ",
+		nodeSummary.WorkingSetBytes,
+		nodeSummary.SwapUsedBytes))
+
+	return usedVirtualmemory > uint64(capacity)
 }
