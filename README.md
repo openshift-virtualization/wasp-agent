@@ -14,21 +14,17 @@ The design can be found in https://github.com/openshift/enhancements/pull/1630
 - Set io latency for system.slice
 - Disable swap in the system.slice
 
-## Wasp Agent: configuring Kubernetes containers
-- Set a specific amount of swap for each burstable pod to match Kubernetes limited swap settings.
+## Manage swap for kubernetes workloads
+Wasp agent implmenetes the same policy as `swapBehavior: LimitedSwap` in kubernetes. It will allow limited swapping for burstable QoS workloads. The implementation of limit setting and the formula for limit calculation are the exact same as in k8s.
 
-**Please note:** swap configuration will not be done for static pods, mirror pods, or critical system pods based on pod priority.
+**Please note:** Same as in kubernetes, swap configuration will not be done for static pods, mirror pods, or critical system pods based on pod priority.
 
-### Pod selection for eviction
-- Eviction targets non-static pods, mirror pods, or critical system pods based on pod priority.
-  Pods in namespaces beginning with "openshift" or "kube-system" are excluded from eviction.
 
 ## Eviction
 
 ### Swap based eviction signals
 - Utilization - How close are we to run out of swap?
 - Traffic - How badly is swapping affecting the system?
-- Overcommit ratio - How over committed is the system?
 
 ### Pod selection for eviction
 - Eviction doesn't target static pods, mirror pods, or critical system pods based on pod priority.
@@ -44,35 +40,12 @@ Note: This is inspired by the [Kubernetes eviction order](https://kubernetes.io/
 , with an additional first criterion.
 
 
-## Build
+## Try it
 
-### Deploy it on your cluster
+### Deploy locally 
 
-```bash
-$ mkdir $GOPATH/src/wasp.io && cd $GOPATH/src/wasp.io
-$ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-agent
-$ export KUBECONFIG=<kubeconfig-path>
-$ export KUBEVIRT_PROVIDER=external 
-$ make cluster-sync
-```
-If you are interested in pushing the images to a remote repository:
-```bash
-$ mkdir $GOPATH/src/wasp.io && cd $GOPATH/src/wasp.io
-$ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-agent
-$ export DOCKER_PREFIX=<desired-registry>
-$ export DOCKER_TAG=<desired-tag>
-$ export KUBECONFIG=<kubeconfig-path>
-$ export KUBEVIRT_PROVIDER=external 
-$ make cluster-sync
-```
-
-### Deploy it with our CI system
-
-Wasp includes a self-contained development and test environment.  
-We use Docker to build, and we provide a simple way to get a test 
-cluster up and running on your laptop. 
-The development tools include a version of kubectl that you can use to communicate with the cluster. 
-A wrapper script to communicate with the cluster can be invoked using ./cluster-up/kubectl.sh.
+The development tools include a version of kubectl that you can use to communicate with the cluster.
+A wrapper script to communicate with the cluster can be invoked using `./cluster-up/kubectl.sh`
 
 ```bash
 $ mkdir $GOPATH/src/kubevirt.io && cd $GOPATH/src/kubevirt.io
@@ -80,4 +53,40 @@ $ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-ag
 $ make cluster-up
 $ make cluster-sync
 $ ./cluster-up/kubectl.sh .....
+```
+
+### Deploy on external kubernetes cluster
+
+```bash
+$ mkdir $GOPATH/src/wasp.io && cd $GOPATH/src/wasp.io
+$ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-agent
+$ docker login <desired-registry> -u <username> -p <password>
+$ export DOCKER_PREFIX=<desired-registry>/<desired-org> # i.e. quay.io/openshift-virtualization
+$ export DOCKER_TAG=<desired-tag>
+$ export KUBECONFIG=<kubeconfig-path>
+$ export KUBEVIRT_PROVIDER=external 
+$ make cluster-sync
+```
+### Deploy on Openshift
+
+```bash
+$ mkdir $GOPATH/src/wasp.io && cd $GOPATH/src/wasp.io
+$ git clone git@github.com:openshift-virtualization/wasp-agent.git && cd wasp-agent
+$ #
+$ # Openshift Pre-requisits
+$ #
+$ # Note: KubeletConfig CRs are mutually exclusive
+$ oc create -f manifests/openshift/kubelet-configuration-with-swap.yaml
+$ oc wait mcp worker --for condition=Updated=True --timeout=300s
+$ oc create -f manifests/openshift/machine-config-add-swap.yaml
+$ oc wait mcp worker --for condition=Updated=True --timeout=300s
+$ #
+$ # WASP deployment
+$ #
+$ docker login <desired-registry> -u <username> -p <password>
+$ export DOCKER_PREFIX=<desired-registry>/<desired-org> # i.e. quay.io/openshift-virtualization
+$ export DOCKER_TAG=<desired-tag>
+$ export KUBECONFIG=<kubeconfig-path>
+$ export KUBEVIRT_PROVIDER=external 
+$ make cluster-sync
 ```
