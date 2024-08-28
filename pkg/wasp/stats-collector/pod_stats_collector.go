@@ -18,11 +18,20 @@ import (
 // This logic relies on knowledge of the container runtime implementation and
 // is not reliable.
 const defaultNetworkInterfaceName = "eth0"
+const nodeRootCgroupName = "/"
 
 type ContainerSummary struct {
 	MemorySwapMaxBytes     uint64
 	MemorySwapCurrentBytes *uint64
 	MemoryWorkingSetBytes  *uint64
+}
+
+type NodeSummary struct {
+	TotalMemoryBytes uint64
+	TotalSwapBytes   uint64
+	WorkingSetBytes  uint64
+	AvailableBytes   uint64
+	SwapUsedBytes    uint64
 }
 
 type PodSummary struct {
@@ -44,11 +53,48 @@ type PodStatsCollector interface {
 	Init() error
 	GetPodSummary(pod *v1.Pod) (PodSummary, error)
 	ListPodsSummary() ([]PodSummary, error)
+	GetRootSummary() (NodeSummary, error)
 }
 
 type PodStatsCollectorImpl struct {
 	cadviorInterface cadvisor.Interface
 	PodSummary       map[string]*PodSummary
+}
+
+func (psc *PodStatsCollectorImpl) GetRootSummary() (NodeSummary, error) {
+	infoMap, err := getNonRecursiveCadvisorContainerInfo(psc.cadviorInterface)
+	if err != nil {
+		return NodeSummary{}, err
+	}
+
+	info := infoMap[nodeRootCgroupName]
+	cstats := cadvisorInfoToContainerStats(nodeRootCgroupName, &info, nil, nil)
+	summary := NodeSummary{
+		TotalMemoryBytes: info.Spec.Memory.Limit,
+		TotalSwapBytes:   info.Spec.Memory.SwapLimit,
+	}
+
+	if cstats.Memory == nil {
+		return NodeSummary{}, fmt.Errorf("Memory stats return nil")
+	}
+
+	if cstats.Swap == nil {
+		return NodeSummary{}, fmt.Errorf("Swap stats return nil")
+	}
+
+	if cstats.Memory.WorkingSetBytes != nil {
+		summary.WorkingSetBytes = *cstats.Memory.WorkingSetBytes
+	}
+
+	if cstats.Memory.AvailableBytes != nil {
+		summary.AvailableBytes = *cstats.Memory.AvailableBytes
+	}
+
+	if cstats.Swap.SwapUsageBytes != nil {
+		summary.SwapUsedBytes = *cstats.Swap.SwapUsageBytes
+	}
+
+	return summary, nil
 }
 
 func (psc *PodStatsCollectorImpl) GetPodSummary(pod *v1.Pod) (PodSummary, error) {
@@ -126,7 +172,7 @@ func (psc *PodStatsCollectorImpl) Init() error {
 }
 
 func (psc *PodStatsCollectorImpl) ListPodsSummary() ([]PodSummary, error) {
-	infos, err := getCadvisorContainerInfo(psc.cadviorInterface)
+	infos, err := getRecursiveCadvisorContainerInfo(psc.cadviorInterface)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get container info from cadvisor: %v", err)
 	}
@@ -365,11 +411,19 @@ func isContainerTerminated(info *cadvisorapiv2.ContainerInfo) bool {
 	return cstat.CpuInst.Usage.Total == 0 && cstat.Memory.RSS == 0
 }
 
-func getCadvisorContainerInfo(ca cadvisor.Interface) (map[string]cadvisorapiv2.ContainerInfo, error) {
-	infos, err := ca.ContainerInfoV2("/", cadvisorapiv2.RequestOptions{
+func getRecursiveCadvisorContainerInfo(ca cadvisor.Interface) (map[string]cadvisorapiv2.ContainerInfo, error) {
+	return getCadvisorContainerInfo(ca, "/", true)
+}
+
+func getNonRecursiveCadvisorContainerInfo(ca cadvisor.Interface) (map[string]cadvisorapiv2.ContainerInfo, error) {
+	return getCadvisorContainerInfo(ca, "/", false)
+}
+
+func getCadvisorContainerInfo(ca cadvisor.Interface, containerName string, recursive bool) (map[string]cadvisorapiv2.ContainerInfo, error) {
+	infos, err := ca.ContainerInfoV2(containerName, cadvisorapiv2.RequestOptions{
 		IdType:    cadvisorapiv2.TypeName,
 		Count:     2, // 2 samples are needed to compute "instantaneous" CPU
-		Recursive: true,
+		Recursive: recursive,
 	})
 	if err != nil {
 		if _, ok := infos["/"]; ok {

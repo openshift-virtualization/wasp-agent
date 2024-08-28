@@ -27,9 +27,9 @@ import (
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	eviction_controller "github.com/openshift-virtualization/wasp-agent/pkg/wasp/eviction-controller"
 	limited_swap_manager "github.com/openshift-virtualization/wasp-agent/pkg/wasp/limited-swap-manager"
+	shortage_detector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/shortage-detector"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	"io"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"os"
@@ -44,10 +44,10 @@ type WaspApp struct {
 	podInformer                     cache.SharedIndexInformer
 	nodeInformer                    cache.SharedIndexInformer
 	ctx                             context.Context
-	maxMemoryOverCommitmentBytes    resource.Quantity
 	cli                             client.WaspClient
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
+	swapUtilizationThresholdFactor  float64
 	AverageWindowSizeSeconds        time.Duration
 	waspNs                          string
 	nodeName                        string
@@ -62,7 +62,7 @@ func Execute() {
 	setOCIHook()
 
 	var app = WaspApp{}
-	memoryOverCommitmentThreshold := os.Getenv("MEMORY_OVER_COMMITMENT_THRESHOLD")
+	swapUtilizationThresholdFactorStr := os.Getenv("SWAP_UTILIZATION_THRESHOLD_FACTOR")
 	maxAverageSwapInPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND")
 	maxAverageSwapOutPagesPerSecond := os.Getenv("MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND")
 	AverageWindowSizeSeconds := os.Getenv("AVERAGE_WINDOW_SIZE_SECONDS")
@@ -71,11 +71,6 @@ func Execute() {
 
 	app.podStatsCollector = stats_collector.NewPodSummaryCollector()
 	err = app.podStatsCollector.Init()
-	if err != nil {
-		panic(err)
-	}
-
-	app.maxMemoryOverCommitmentBytes, err = resource.ParseQuantity(memoryOverCommitmentThreshold)
 	if err != nil {
 		panic(err)
 	}
@@ -98,6 +93,12 @@ func Execute() {
 	}
 	app.maxAverageSwapOutPagesPerSecond = float32(maxSwapOutRateToConvert)
 
+	swapUtilizationThresholdFactor, err := strconv.ParseFloat(swapUtilizationThresholdFactorStr, 64)
+	if err != nil {
+		panic(err)
+	}
+	app.swapUtilizationThresholdFactor = swapUtilizationThresholdFactor
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	app.ctx = ctx
@@ -114,14 +115,14 @@ func Execute() {
 	app.podInformer = informers.GetPodInformer(app.cli)
 	app.nodeInformer = informers.GetNodeInformer(app.cli)
 
-	log.Log.Infof("MEMORY_OVER_COMMITMENT_THRESHOLD:%v "+
+	log.Log.Infof("SWAP_UTILIZATION_THRESHOLD_FACTOR:%v "+
 		"MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND:%v "+
 		"MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND:%v "+
 		"AVERAGE_WINDOW_SIZE_SECONDS:%v "+
 		"nodeName: %v "+
 		"ns: %v "+
 		"fsRoot: %v",
-		app.maxMemoryOverCommitmentBytes,
+		app.swapUtilizationThresholdFactor,
 		app.maxAverageSwapInPagesPerSecond,
 		app.maxAverageSwapOutPagesPerSecond,
 		app.AverageWindowSizeSeconds,
@@ -137,17 +138,24 @@ func Execute() {
 }
 
 func (waspapp *WaspApp) initEvictionController(stop <-chan struct{}) {
+	sc := stats_collector.NewStatsCollectorImpl()
+	shortageDetector := shortage_detector.NewShortageDetectorImpl(sc,
+		waspapp.podStatsCollector,
+		waspapp.maxAverageSwapInPagesPerSecond,
+		waspapp.maxAverageSwapOutPagesPerSecond,
+		waspapp.swapUtilizationThresholdFactor,
+		waspapp.AverageWindowSizeSeconds,
+	)
+
 	waspapp.evictionController = eviction_controller.NewEvictionController(waspapp.cli,
 		waspapp.podStatsCollector,
 		waspapp.podInformer,
 		waspapp.nodeInformer,
 		waspapp.nodeName,
-		waspapp.maxAverageSwapInPagesPerSecond,
-		waspapp.maxAverageSwapOutPagesPerSecond,
-		waspapp.maxMemoryOverCommitmentBytes,
-		waspapp.AverageWindowSizeSeconds,
 		waspapp.waspNs,
 		stop,
+		shortageDetector,
+		sc,
 	)
 }
 func (waspapp *WaspApp) initLimitedSwapManager(stop <-chan struct{}) {

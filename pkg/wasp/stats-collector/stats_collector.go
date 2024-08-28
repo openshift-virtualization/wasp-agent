@@ -43,25 +43,11 @@ func (sc *StatsCollectorImpl) GatherStats() {
 		fmt.Println("Error fetching swap memory:", err)
 		return
 	}
-	virtualMem, err := mem.VirtualMemory()
-	if err != nil {
-		fmt.Println("Error fetching virtualMem memory:", err)
-		return
-	}
-
-	virtualMemEx, err := mem.VirtualMemoryEx()
-	if err != nil {
-		fmt.Println("Error fetching virtualMem memory:", err)
-		return
-	}
 
 	newStats := Stats{
-		SwapIn:               swap.Sin,
-		SwapOut:              swap.Sout,
-		SwapUsedBytes:        int64(swap.Used),
-		Time:                 time.Now(),
-		AvailableMemoryBytes: int64(virtualMem.Available),
-		InactiveFileBytes:    int64(virtualMemEx.InactiveFile),
+		SwapIn:  swap.Sin,
+		SwapOut: swap.Sout,
+		Time:    time.Now(),
 	}
 
 	sc.mu.Lock()

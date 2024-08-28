@@ -14,19 +14,26 @@ type ShortageDetector interface {
 
 type ShortageDetectorImpl struct {
 	sc                              stats_collector.StatsCollector
+	psc                             stats_collector.PodStatsCollector
 	maxAverageSwapInPagesPerSecond  float32
 	maxAverageSwapOutPagesPerSecond float32
-	maxMemoryOverCommitmentBytes    int64
+	swapUtilizationThresholdFactor  float64
 	AverageWindowSizeSeconds        time.Duration
 }
 
-func NewShortageDetectorImpl(sc stats_collector.StatsCollector, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond float32, maxMemoryOverCommitmentBytes int64, AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
+func NewShortageDetectorImpl(sc stats_collector.StatsCollector,
+	psc stats_collector.PodStatsCollector,
+	maxAverageSwapInPagesPerSecond,
+	maxAverageSwapOutPagesPerSecond float32,
+	swapUtilizationThresholdFactor float64,
+	AverageWindowSizeSeconds time.Duration) *ShortageDetectorImpl {
 	return &ShortageDetectorImpl{
 		sc:                              sc,
+		psc:                             psc,
 		maxAverageSwapInPagesPerSecond:  maxAverageSwapInPagesPerSecond,
 		maxAverageSwapOutPagesPerSecond: maxAverageSwapOutPagesPerSecond,
-		maxMemoryOverCommitmentBytes:    maxMemoryOverCommitmentBytes,
 		AverageWindowSizeSeconds:        AverageWindowSizeSeconds,
+		swapUtilizationThresholdFactor:  swapUtilizationThresholdFactor,
 	}
 }
 
@@ -60,7 +67,12 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 	averageSwapInPerSecond := float32(firstStat.SwapIn-secondNewest.SwapIn) / timeDiffSeconds
 	averageSwapOutPerSecond := float32(firstStat.SwapOut-secondNewest.SwapOut) / timeDiffSeconds
 	highTrafficCondition := averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond && averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond
-	overCommitmentRatioCondition := sdi.maxMemoryOverCommitmentBytes < firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes
+
+	nodeSummary, err := sdi.psc.GetRootSummary()
+	if err != nil {
+		return false, err
+	}
+	highSwapUtilization := sdi.swapUtilizationThresholdMet(&nodeSummary)
 
 	/*
 		log.Log.Infof(fmt.Sprintf("Debug: ______________________________________________________________________________________________________________"))
@@ -74,9 +86,28 @@ func (sdi *ShortageDetectorImpl) ShouldEvict() (bool, error) {
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapInPerSecond: %v condition: %v", averageSwapInPerSecond, averageSwapInPerSecond > sdi.maxAverageSwapInPagesPerSecond))
 		log.Log.Infof(fmt.Sprintf("Debug: averageSwapOutPerSecond:%v condition: %v", averageSwapOutPerSecond, averageSwapOutPerSecond > sdi.maxAverageSwapOutPagesPerSecond))
 	}
-	if overCommitmentRatioCondition {
-		log.Log.Infof("overCommitmentRatioCondition is true")
-		log.Log.Infof(fmt.Sprintf("Debug: overcommitment size:%v condition: %v", firstStat.SwapUsedBytes-firstStat.AvailableMemoryBytes-firstStat.InactiveFileBytes, overCommitmentRatioCondition))
+
+	if highSwapUtilization {
+		log.Log.Infof("highSwapUtilization is true")
+		log.Log.Infof(fmt.Sprintf("Debug: TotalSwapBytes %v", nodeSummary.TotalSwapBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: TotalMemoryBytes %v", nodeSummary.TotalMemoryBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: WorkingSetBytes %v", nodeSummary.WorkingSetBytes))
+		log.Log.Infof(fmt.Sprintf("Debug: SwapUsedBytes %v", nodeSummary.SwapUsedBytes))
 	}
-	return highTrafficCondition || overCommitmentRatioCondition, nil
+	
+	return highTrafficCondition || highSwapUtilization, nil
+}
+
+func (sdi *ShortageDetectorImpl) swapUtilizationThresholdMet(nodeSummary *stats_collector.NodeSummary) bool {
+	factoredSwap := float64(nodeSummary.TotalSwapBytes) * sdi.swapUtilizationThresholdFactor
+	capacity := float64(nodeSummary.TotalMemoryBytes) + factoredSwap
+	usedVirtualmemory := nodeSummary.WorkingSetBytes + nodeSummary.SwapUsedBytes
+	log.Log.V(4).Info(fmt.Sprintf("Debug: nodeSummary.TotalSwapBytes %v nodeSummary.TotalMemoryBytes %v ",
+		nodeSummary.TotalSwapBytes,
+		nodeSummary.TotalMemoryBytes))
+	log.Log.V(4).Info(fmt.Sprintf("Debug: nodeSummary.WorkingSetBytes %v nodeSummary.SwapUsedBytes %v ",
+		nodeSummary.WorkingSetBytes,
+		nodeSummary.SwapUsedBytes))
+
+	return usedVirtualmemory > uint64(capacity)
 }
