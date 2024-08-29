@@ -178,9 +178,8 @@ func (lsm *LimitedSwapManager) execute(key string) (error, enqueueState) {
 		log.Log.Errorf(err.Error())
 		return err, BackOff
 	}
-	excludedPrefixesForNamespaces := []string{"openshift", "kube-system"}
 	podQos := kubeapiqos.GetPodQOS(pod)
-	setAllContainersSwapToZero := podQos != v1.PodQOSBurstable || kubelettypes.IsCriticalPod(pod) || hasExcludedPrefix(pod.Namespace, excludedPrefixesForNamespaces)
+	setAllContainersSwapToZero := podQos != v1.PodQOSBurstable || kubelettypes.IsCriticalPod(pod)
 
 	for _, container := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 		containerState, exist := getContainerState(pod, container)
@@ -321,14 +320,4 @@ func getContainerState(pod *v1.Pod, container v1.Container) (v1.ContainerState, 
 	}
 
 	return v1.ContainerState{}, false
-}
-
-// hasExcludedPrefix checks if the given namespace name starts with any of the excluded prefixes
-func hasExcludedPrefix(namespace string, excludedPrefixes []string) bool {
-	for _, prefix := range excludedPrefixes {
-		if strings.HasPrefix(namespace, prefix) {
-			return true
-		}
-	}
-	return false
 }
