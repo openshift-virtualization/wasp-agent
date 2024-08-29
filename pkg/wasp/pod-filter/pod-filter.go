@@ -1,8 +1,6 @@
 package pod_filter
 
 import (
-	"strings"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -25,25 +23,12 @@ func NewPodFilterImpl(waspNs string) *PodFilterImpl {
 func (pr *PodFilterImpl) FilterPods(pods []*v1.Pod) []*v1.Pod {
 	var filteredPods []*v1.Pod
 
-	// Prefixes to exclude
-	excludedPrefixesForNamespaces := []string{"openshift", "kube-system"}
-
 	for _, pod := range pods {
 		// Check if the namespace name starts with any of the excluded prefixes
-		if pod.Namespace != pr.waspNs && !pr.hasExcludedPrefix(pod.Namespace, excludedPrefixesForNamespaces) && !IsCriticalPod(pod) {
+		if pod.Namespace != pr.waspNs && !IsCriticalPod(pod) {
 			filteredPods = append(filteredPods, pod)
 		}
 	}
 
 	return filteredPods
-}
-
-// hasExcludedPrefix checks if the given namespace name starts with any of the excluded prefixes
-func (pr *PodFilterImpl) hasExcludedPrefix(namespace string, excludedPrefixes []string) bool {
-	for _, prefix := range excludedPrefixes {
-		if strings.HasPrefix(namespace, prefix) {
-			return true
-		}
-	}
-	return false
 }
