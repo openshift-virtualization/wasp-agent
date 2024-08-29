@@ -76,9 +76,9 @@ $ # Openshift Pre-requisits
 $ #
 $ # Note: KubeletConfig CRs are mutually exclusive
 $ oc create -f manifests/openshift/kubelet-configuration-with-swap.yaml
-$ oc wait mcp worker --for condition=Updated=True --timeout=300s
+$ oc wait mcp worker --for condition=Updated=True --timeout=-1s
 $ oc create -f manifests/openshift/machine-config-add-swap.yaml
-$ oc wait mcp worker --for condition=Updated=True --timeout=300s
+$ oc wait mcp worker --for condition=Updated=True --timeout=-1s
 $ #
 $ # WASP deployment
 $ #
