@@ -41,7 +41,12 @@ SWAP usage is supported on worker nodes only.
    Create a `KubeletConfiguration` according to the following
    [example](../manifests/openshift/kubelet-configuration-with-swap.yaml).
 
-2. Create `MachineConfig` to provision swap according to the following [example](../manifests/openshift/machineconfig-add-swap.yaml)
+2. Wait for the worker nodes to sync with the new config:
+```console
+$ oc wait mcp worker --for condition=Updated=True --timeout=-1s
+```
+
+3. Create `MachineConfig` to provision swap according to the following [example](../manifests/openshift/machineconfig-add-swap.yaml)
 
 > [!IMPORTANT]
 > In order to have enough swap for the worst case scenario, it must
@@ -71,7 +76,12 @@ $ oc create clusterrolebinding wasp --clusterrole=cluster-admin --serviceaccount
 $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
 
-4. Deploy `wasp-agent`
+4. Wait for the worker nodes to sync with the new config:
+```console
+$ oc wait mcp worker --for condition=Updated=True --timeout=-1s
+```
+
+5. Deploy `wasp-agent`
    Create a `DaemonSet` according to the following
    [example](../manifests/openshift/ds.yaml).
 
@@ -79,30 +89,33 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 > The wasp-agent  manages pod eviction when the system is heavily loaded and
 > nodes are at risk. Eviction will be triggered if any of the following conditions occur:
 > 1. High Swap I/O Traffic:
-> * `averageSwapInPerSecond > maxAverageSwapInPagesPerSecond`
-> and<br>
-> `averageSwapOutPerSecond > maxAverageSwapOutPagesPerSecond`<br><br>
-> This condition is triggered when swap-related I/O traffic
-> is excessively high.
-> The default values for `maxAverageSwapInPagesPerSecond` and
-> `maxAverageSwapOutPagesPerSecond` are both set to 1000, averaged 
-> over a 30-second interval by default.
-> 2. High Memory Overcommitment:
-> * `maxMemoryOverCommitmentBytes < SwapUsedBytes - AvailableMemoryBytes`<br><br>
-> This condition is triggered when swap utilization is excessively high.
-> This depends on the `NODE_SWAP_SPACE` setting in the machine configuration from
-> step 3 or when the memory overcommitment ratio is too high.The default value for
-> `maxMemoryOverCommitment` is set to 500Mi.<br><br>
+>* `averageSwapInPerSecond > maxAverageSwapInPagesPerSecond`
+   and<br>
+   `averageSwapOutPerSecond > maxAverageSwapOutPagesPerSecond`<br><br>
+   This condition is triggered when swap-related I/O traffic
+   is excessively high.
+   The default values for `maxAverageSwapInPagesPerSecond` and
+   `maxAverageSwapOutPagesPerSecond` are both set to 1000, averaged
+   over a 30-second interval by default.
+> 2. High Swap Utilization:
+> * `nodeWorkingSet + nodeSwapUsage < totalNodeMemory + totalSwapMemory * thresholdFactor `<br><br>
+    This condition is triggered when swap utilization is excessively high.
+    This depends on the `NODE_SWAP_SPACE` setting in the machine configuration from
+    step 3 or when the current virtual memory usage exceeds the factored threshold<br><br>
 >
-> `maxAverageSwapInPagesPerSecond`, `maxAverageSwapOutPagesPerSecond`, and 
-> `maxMemoryOverCommitment` can be adjusted by modifying the values of the 
-> `MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND`, `MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND`, 
-> and `MEMORY_OVER_COMMITMENT_THRESHOLD` environment variables in the provided 
-> example, respectively. Additionally, the `AVERAGE_WINDOW_SIZE_SECONDS` environment 
+>
+> `maxAverageSwapInPagesPerSecond` and `maxAverageSwapOutPagesPerSecond`
+> can be adjusted by modifying the values of the
+> `MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND` and `MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND`.<br><br>
+>
+>
+> The high swap utilization threshold factor can be adjusted using ``SWAP_UTILIZATION_THRESHOLD_FACTOR`` variable. For example, having a node with 16G RAM and 8G swap, with a threshold factor of 0.8 the threshold would be 16 + 8*0.8 = 16 + 6.4 = 22.4G <br><br>
+> Additionally, the `AVERAGE_WINDOW_SIZE_SECONDS` environment
 > variable determines the time frame for calculating the average.
 
+
 5. Deploy alerting rules according to the following
-   [example](../manifests/openshift/prometheus-rules.yaml) and
+   [example](../manifests/openshift/prometheus-rule.yaml) and
    add the cluster-monitoring label to the wasp namespace.
 ```console
 $ oc label namespace wasp openshift.io/cluster-monitoring="true"
@@ -110,21 +123,17 @@ $ oc label namespace wasp openshift.io/cluster-monitoring="true"
 
 6. Configure OpenShift Virtualization to use memory overcommit using
 
-   a. the OpenShift Console
-   b. the following [HCO example](../manifests/openshift/hco-set-memory-overcommit.yaml):
+   a. Via the OpenShift Console: <br>
+       **Virtualization -> Overview -> Settings -> General Settings -> Memory Density** <br>
+       ![image](https://github.com/user-attachments/assets/07c02c7c-0cd6-4377-9119-a8f3b7a58695)
+
+   b. Alternatively via the CLI: [HCO example](../manifests/openshift/hco-set-memory-overcommit.yaml):
 
 ```console
 $ oc patch --type=merge \
-  -f <../manifests/hco-set-memory-overcommit.yaml> \
-  --patch-file <../manifests/hco-set-memory-overcommit.yaml>
+  -f <../manifests/openshift/hco-set-memory-overcommit.yaml> \
+  --patch-file <../manifests/openshift/hco-set-memory-overcommit.yaml>
 ```
-
-> [!NOTE]
-> After applying all configurations all `MachineConfigPool`
-> roll-outs have to complete before the feature is fully available.
->
->     $ oc wait mcp worker --for condition=Updated=True
->
 
 ### Upgrade path
 For users of wasp-agent v1.0, which lacks LimitedSwap and eviction support, here is the upgrade path:
