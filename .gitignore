@@ -1,4 +1,12 @@
-/target
-Cargo.lock
-**.swp
-.idea
+/.idea/
+/tmp
+/_ci-configs/*
+/0
+/bin/
+/_out/*
+/.coverprofile
+/kubeconfig
+/oc
+/manifests/generated/*
+/wasp
+/manifest-generator
