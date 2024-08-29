@@ -28,7 +28,6 @@ Wasp agent implmenetes the same policy as `swapBehavior: LimitedSwap` in kuberne
 
 ### Pod selection for eviction
 - Eviction doesn't target static pods, mirror pods, or critical system pods based on pod priority.
-  Pods in namespaces beginning with "openshift" or "kube-system" are excluded from eviction.
 
 ### Eviction order:
 - Exceeding memory resource limits
