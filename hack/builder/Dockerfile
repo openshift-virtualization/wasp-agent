@@ -94,7 +94,8 @@ COPY rsyncd.conf /etc/rsyncd.conf
 
 COPY entrypoint.sh /entrypoint.sh
 
-# Add /root/go/src/kubevirt.io/kubevirt and mark it as a safe directory for git
-RUN mkdir -p /root/go/src/kubevirt.io/kubevirt && git config --global --add safe.directory /root/go/src/kubevirt.io/kubevirt
+# Add /root/go/src/github.com/openshift-virtualization/wasp-agent and mark it as a safe directory for git
+RUN mkdir -p /root/go/src/github.com/openshift-virtualization/wasp-agent && \
+    git config --global --add safe.directory /root/go/src/github.com/openshift-virtualization/wasp-agent
 
 ENTRYPOINT [ "/entrypoint.sh" ]
