@@ -12,24 +12,11 @@ fi
 
 fail_if_cri_bin_missing
 
-kubevirt_builder_version="2408151859-735f25dde"
-default_kubevirt_builder_image="quay.io/kubevirt/builder:${kubevirt_builder_version}"
-kubevirt_cross_compile_image="quay.io/kubevirt/builder-cross:${kubevirt_builder_version}"
+wasp_builder_version="2408151859-735f25dde"
+default_wasp_builder_image="quay.io/kubevirt/builder:${wasp_builder_version}"
+kubevirt_cross_compile_image="quay.io/kubevirt/builder-cross:${wasp_builder_version}"
 
-KUBEVIRT_BUILDER_IMAGE=${KUBEVIRT_BUILDER_IMAGE:-"${default_kubevirt_builder_image}"}
-
-# As long as KUBEVIRT_BUILDER_IMAGE is using the default builder, check if cross-compilation is needed and
-# switch to bigger cross-compile image instead.
-# Should KUBEVIRT_BUILDER_IMAGE be modified by the user, do not change it. It is assumed that the user knows
-# what they are doing.
-if [ "${KUBEVIRT_BUILDER_IMAGE}" == "${default_kubevirt_builder_image}" ] && [ -n "${BUILD_ARCH}" ]; then
-    for arch in ${BUILD_ARCH//,/ }; do
-        arch=$(format_archname "${arch}")
-        if [[ ${arch} =~ ^cross-* ]]; then
-            KUBEVIRT_BUILDER_IMAGE="${kubevirt_cross_compile_image}"
-        fi
-    done
-fi
+WASP_BUILDER_IMAGE=${WASP_BUILDER_IMAGE:-"${default_kubevirt_builder_image}"}
 
 SYNC_OUT=${SYNC_OUT:-true}
 
@@ -54,11 +41,11 @@ if [[ $KUBEVIRT_CRI = podman* ]] && [[ "$(uname -s)" == "Darwin" ]]; then
 fi
 
 # Make sure that the output directory exists on both sides
-$KUBEVIRT_CRI run ${CONTAINER_ENV} -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --rm ${KUBEVIRT_BUILDER_IMAGE} mkdir -p /root/go/src/kubevirt.io/kubevirt/_out
+$KUBEVIRT_CRI run ${CONTAINER_ENV} -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --rm ${WASP_BUILDER_IMAGE} mkdir -p /root/go/src/kubevirt.io/kubevirt/_out
 mkdir -p ${OUT_DIR}
 
 # Start an rsyncd instance and make sure it gets stopped after the script exits
-RSYNC_CID=$($KUBEVIRT_CRI run ${CONTAINER_ENV} -d -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --cap-add SYS_CHROOT --expose 873 -P ${KUBEVIRT_BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
+RSYNC_CID=$($KUBEVIRT_CRI run ${CONTAINER_ENV} -d -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --cap-add SYS_CHROOT --expose 873 -P ${WASP_BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
 
 function finish() {
     $KUBEVIRT_CRI stop --time 1 ${RSYNC_CID} >/dev/null 2>&1
@@ -141,7 +128,7 @@ fi
 # Ensure that a bazel server which is running is the correct one
 if [ -n "$($KUBEVIRT_CRI ps --format '{{.Names}}' | grep ${BUILDER}-bazel-server)" ]; then
     # check if the image is correct
-    builder_id=$($KUBEVIRT_CRI inspect --format='{{.Id}}' ${KUBEVIRT_BUILDER_IMAGE})
+    builder_id=$($KUBEVIRT_CRI inspect --format='{{.Id}}' ${WASP_BUILDER_IMAGE})
     bazel_server_id=$($KUBEVIRT_CRI inspect --format='{{.Image}}' ${BUILDER}-bazel-server)
     if [ "${builder_id}" != "${bazel_server_id}" ]; then
         echo "Bazel server is outdated, restarting ..."
@@ -151,7 +138,7 @@ fi
 
 # Ensure that a bazel server is running
 if [ -z "$($KUBEVIRT_CRI ps --format '{{.Names}}' | grep ${BUILDER}-bazel-server)" ]; then
-    $KUBEVIRT_CRI run ${CONTAINER_ENV} --ulimit nofile=10000:10000 --network host -d ${volumes} --security-opt "label=disable" --name ${BUILDER}-bazel-server -w "/root/go/src/kubevirt.io/kubevirt" --rm ${KUBEVIRT_BUILDER_IMAGE} hack/bazel-server.sh
+    $KUBEVIRT_CRI run ${CONTAINER_ENV} --ulimit nofile=10000:10000 --network host -d ${volumes} --security-opt "label=disable" --name ${BUILDER}-bazel-server -w "/root/go/src/kubevirt.io/kubevirt" --rm ${WASP_BUILDER_IMAGE} hack/bazel-server.sh
 fi
 
 # Update cert trust, if custom is provided
