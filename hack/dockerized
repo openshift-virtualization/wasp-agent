@@ -5,7 +5,7 @@ set -ex
 # Bootstrapping should be done inside the build container
 source $(dirname "$0")/common.sh
 
-if [ "${KUBEVIRT_RUN_UNNESTED}" == "true" ]; then
+if [ "${WASP_RUN_UNNESTED}" == "true" ]; then
     /bin/bash -c "$@"
     exit $?
 fi

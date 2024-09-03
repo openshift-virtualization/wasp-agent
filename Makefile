@@ -26,17 +26,6 @@ all: build
 
 build:  wasp manifest-generator
 
-DOCKER?=1
-ifeq (${DOCKER}, 1)
-	# use entrypoint.sh (default) as your entrypoint into the container
-	DO=./hack/build/in-docker.sh
-	# use entrypoint-bazel.sh as your entrypoint into the container.
-	DO_BAZ=./hack/build/bazel-docker.sh
-else
-	DO=eval
-	DO_BAZ=eval
-endif
-
 ifeq ($(origin KUBEVIRT_RELEASE), undefined)
 	KUBEVIRT_RELEASE="latest_nightly"
 endif
@@ -44,7 +33,7 @@ endif
 all: manifests build-images
 
 manifests:
-	${DO_BAZ} "DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG} VERBOSITY=${VERBOSITY} PULL_POLICY=${PULL_POLICY} CR_NAME=${CR_NAME} WASP_NAMESPACE=${WASP_NAMESPACE} MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND} MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND} SWAP_UTILIZATION_THRESHOLD_FACTOR=${SWAP_UTILIZATION_THRESHOLD_FACTOR} AVERAGE_WINDOW_SIZE_SECONDS=${AVERAGE_WINDOW_SIZE_SECONDS}  DEPLOY_PROMETHEUS_RULE=${DEPLOY_PROMETHEUS_RULE} ./hack/build/build-manifests.sh"
+	hack/dockerized "DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG} VERBOSITY=${VERBOSITY} PULL_POLICY=${PULL_POLICY} CR_NAME=${CR_NAME} WASP_NAMESPACE=${WASP_NAMESPACE} MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND} MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND=${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND} SWAP_UTILIZATION_THRESHOLD_FACTOR=${SWAP_UTILIZATION_THRESHOLD_FACTOR} AVERAGE_WINDOW_SIZE_SECONDS=${AVERAGE_WINDOW_SIZE_SECONDS}  DEPLOY_PROMETHEUS_RULE=${DEPLOY_PROMETHEUS_RULE} ./hack/build/build-manifests.sh"
 
 builder-push:
 	./hack/build/bazel-build-builder.sh
@@ -71,17 +60,17 @@ cluster-sync: cluster-clean-wasp
 
 test: WHAT = ./pkg/... ./cmd/...
 test: bootstrap-ginkgo
-	${DO_BAZ} "ACK_GINKGO_DEPRECATIONS=${ACK_GINKGO_DEPRECATIONS} ./hack/build/run-unit-tests.sh ${WHAT}"
+	hack/dockerized "ACK_GINKGO_DEPRECATIONS=${ACK_GINKGO_DEPRECATIONS} ./hack/build/run-unit-tests.sh ${WHAT}"
 
 build-functest:
-	${DO_BAZ} ./hack/build/build-functest.sh
+	hack/dockerized ./hack/build/build-functest.sh
 
 functest:  WHAT = ./tests/...
 functest: build-functest
 	./hack/build/run-functional-tests.sh ${WHAT} "${TEST_ARGS}"
 
 bootstrap-ginkgo:
-	${DO_BAZ} ./hack/build/bootstrap-ginkgo.sh
+	hack/dockerized ./hack/build/bootstrap-ginkgo.sh
 
 manifest-generator:
 	GO111MODULE=${GO111MODULE:-off} go build -o manifest-generator -v tools/manifest-generator/*.go
