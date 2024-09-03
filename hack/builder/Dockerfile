@@ -37,12 +37,6 @@ RUN dnf install -y dnf-plugins-core && \
 # Avoids the need to install sssd-client by disabling lookups
 COPY nsswitch.conf /etc/nsswitch.conf
 
-# Necessary for generation of HTML-formatted API docs (.adoc)
-RUN gem install asciidoctor
-
-# Generates Asciidoc files from swagger.json
-ADD https://storage.googleapis.com/builddeps/swagger2markup-cli-1.3.3.jar /opt/swagger2markup-cli/swagger2markup-cli-1.3.3.jar
-
 # reference to master is for an external repo and can't yet be changed
 RUN mkdir -p /gimme && curl -sL \
     https://raw.githubusercontent.com/travis-ci/gimme/master/gimme | \
