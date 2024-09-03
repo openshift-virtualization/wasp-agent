@@ -37,3 +37,4 @@ ARTIFACTS=${ARTIFACTS:-${OUT_DIR}/artifacts}
 
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
 DOCKERIZED_CUSTOM_CA_PATH="/etc/pki/ca-trust/source/anchors/custom-ca.crt"
+VENDOR_DIR=$WASP_AGENT_DIR/vendor

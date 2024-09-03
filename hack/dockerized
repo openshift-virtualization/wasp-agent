@@ -126,7 +126,7 @@ fi
 
 # Run the command
 test -t 1 && USE_TTY="-it"
-if ! $KUBEVIRT_CRI exec ${CONTAINER_ENV} ${USE_TTY} ${RSYNC_CID} /entrypoint.sh "$@"; then
+if ! $KUBEVIRT_CRI exec ${CONTAINER_ENV} -w /root/go/src/github.com/openshift-virtualization/wasp-agent ${USE_TTY} ${RSYNC_CID} /entrypoint.sh "$@"; then
     # Copy the build output out of the container, make sure that _out exactly matches the build result
     if [ "$SYNC_OUT" = "true" ]; then
         _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}
@@ -147,8 +147,6 @@ _rsync \
     ${WASP_AGENT_DIR}/
 
 _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/manifests/generated/" "${WASP_AGENT_DIR}/manifests/generated"
-_rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/staging/src/kubevirt.io/client-go/generated/" "${WASP_AGENT_DIR}/staging/src/kubevirt.io/client-go/generated"
-_rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/examples/" "${WASP_AGENT_DIR}/examples"
 if [ "$SYNC_VENDOR" = "true" ]; then
     _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/vendor" "${VENDOR_DIR}/"
 fi
