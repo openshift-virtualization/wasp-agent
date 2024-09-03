@@ -1,6 +1,5 @@
 FROM quay.io/centos/centos:stream9
 
-ARG SONOBUOY_ARCH
 ARG BAZEL_ARCH
 
 ENV BAZEL_VERSION=5.4.1
@@ -113,13 +112,6 @@ RUN set -x && \
     curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(go env GOROOT)"/bin $GOLANGCI_LINT_VERSION
 
 RUN pip3 install --upgrade operator-courier==${OPERATOR_COURIER_VERSION}
-
-RUN set -x && \
-    wget https://github.com/vmware-tanzu/sonobuoy/releases/download/v${SONOBUOY_VERSION}/sonobuoy_${SONOBUOY_VERSION}_linux_${SONOBUOY_ARCH}.tar.gz && \
-    tar xvf sonobuoy_${SONOBUOY_VERSION}_linux_${SONOBUOY_ARCH}.tar.gz && \
-    chmod +x sonobuoy && \
-    mv sonobuoy /usr/bin && \
-    rm sonobuoy_${SONOBUOY_VERSION}_linux_${SONOBUOY_ARCH}.tar.gz
 
 COPY rsyncd.conf /etc/rsyncd.conf
 
