@@ -8,7 +8,6 @@ ENV GOLANGCI_LINT_VERSION=v1.60.1
 RUN dnf install -y dnf-plugins-core && \
     dnf config-manager --enable crb && \
     dnf install -y --setopt=install_weak_deps=False \
-        libvirt-devel \
         cpio \
         patch \
         make \
@@ -22,7 +21,6 @@ RUN dnf install -y dnf-plugins-core && \
         findutils \
         rsync-daemon \
         rsync \
-        qemu-img \
         protobuf-compiler \
         python3 \
         python3-devel \
