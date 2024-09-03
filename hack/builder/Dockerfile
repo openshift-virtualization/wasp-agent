@@ -45,43 +45,19 @@ RUN mkdir -p /gimme && curl -sL \
 ENV GOPATH="/go" GOBIN="/usr/bin" GO111MODULE="on"
 
 # Install persistent go packages
-RUN set -x && \
-    mkdir -p /go && \
-    source /etc/profile.d/gimme.sh && \
-    go install -v golang.org/x/tools/cmd/goimports@d5fe738 && \
-    go install -v mvdan.cc/sh/v3/cmd/shfmt@v3.1.1 && \
-    go install -v k8s.io/code-generator/cmd/conversion-gen@v0.20.2  && \
-    go install -v k8s.io/code-generator/cmd/deepcopy-gen@v0.20.2 && \
-    go install -v k8s.io/code-generator/cmd/defaulter-gen@v0.20.2  && \
-    go install -v k8s.io/kube-openapi/cmd/openapi-gen@f5883ff && \
+RUN \
+	source /etc/profile.d/gimme.sh && \
+	eval $(go env) && \
+	go install github.com/onsi/ginkgo/ginkgo@v1.14.1 && \
+	go install golang.org/x/tools/cmd/goimports@latest && \
+	go install mvdan.cc/sh/cmd/shfmt@latest && \
+	go install github.com/mattn/goveralls@latest && \
+	go install golang.org/x/lint/golint@latest && \
     go install -v github.com/golang/protobuf/protoc-gen-go@1643683 && \
-    go install -v k8s.io/code-generator/cmd/client-gen@v0.20.2 && \
-    go install -v github.com/securego/gosec/v2/cmd/gosec@0ce48a5 && \
-    go install -v sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0 && \
-    go install -v github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@e2be790 && \
-    go clean -cache -modcache
-
-RUN set -x && \
-    source /etc/profile.d/gimme.sh && \
-    go install -v github.com/mattn/goveralls@21feffdfd && \
-    go install -v github.com/rmohr/mock/mockgen@v0.0.0-20170327080805-5980f5d9a70d && \
-    go install -v github.com/rmohr/go-swagger-utils/swagger-doc@v0.0.0-20181110145135-878f7deb1d17 && \
-    go clean -cache -modcache
-
-RUN set -x && \
-    source /etc/profile.d/gimme.sh && \
-    git clone https://github.com/kubernetes/test-infra.git && \
-    cd /test-infra && \
-    git checkout f2693aba912dd40c974304caca999d45ee8dce33 && \
-    cd /test-infra/robots/pr-creator && \
-    go install && \
-    cd /test-infra/robots/issue-creator && \
-    go install && \
-    cd /test-infra/robots/pr-labeler && \
-    go install && \
-    go clean -cache -modcache -r && \
-    rm -rf /test-infra && \
-    rm -rf /go && mkdir /go
+	go install github.com/rmohr/go-swagger-utils/swagger-doc@latest && \
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.3 && \
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0 && \
+    rm -rf "${GOPATH}/pkg"
 
 RUN set -x && \
     source /etc/profile.d/gimme.sh && \
