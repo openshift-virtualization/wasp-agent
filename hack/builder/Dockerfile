@@ -1,11 +1,7 @@
 FROM quay.io/centos/centos:stream9
 
-ARG BAZEL_ARCH
-
-ENV BAZEL_VERSION=5.4.1
 ENV GIMME_GO_VERSION=1.22.6
 ENV OPERATOR_COURIER_VERSION=2.1.11
-ENV SONOBUOY_VERSION=0.56.9
 ENV GOLANGCI_LINT_VERSION=v1.60.1
 
 ENV KUBEVIRT_CREATE_BAZELRCS=false
@@ -118,9 +114,6 @@ COPY rsyncd.conf /etc/rsyncd.conf
 COPY entrypoint.sh /entrypoint.sh
 
 COPY create_bazel_cache_rcs.sh /create_bazel_cache_rcs.sh
-
-RUN curl -L -o /usr/bin/bazel https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-${BAZEL_ARCH} && \
-    chmod u+x /usr/bin/bazel
 
 # Add /root/go/src/kubevirt.io/kubevirt and mark it as a safe directory for git
 RUN mkdir -p /root/go/src/kubevirt.io/kubevirt && git config --global --add safe.directory /root/go/src/kubevirt.io/kubevirt
