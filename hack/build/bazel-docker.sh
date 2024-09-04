@@ -40,9 +40,9 @@ fi
 
 # Make sure that the output directory exists
 echo "Making sure output directory exists..."
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/kubevirt.io/wasp-agent/_out
+${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/github.com/openshift-virtualization/wasp-agent/_out
 
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/kubevirt.io/wasp-agent
+${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/github.com/openshift-virtualization/wasp-agent
 echo "Starting rsyncd"
 # Start an rsyncd instance and make sure it gets stopped after the script exits
 RSYNC_CID_WASP=$(${WASP_CRI} run -d -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --cap-add SYS_CHROOT --expose 873 -P --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
@@ -90,21 +90,6 @@ _rsync \
     --exclude ".vagrant" \
     ${WASP_DIR}/ \
     "rsync://root@127.0.0.1:${RSYNCD_PORT}/build"
-
-volumes="-v ${BUILDER_VOLUME}:/root:rw,z"
-# append .docker directory as volume
-mkdir -p "${HOME}/.docker"
-volumes="$volumes -v ${HOME}/.docker:/root/.docker:ro,z"
-
-if [[ WASP_CRI = podman* ]] && [[ -f "${XDG_RUNTIME_DIR-}/containers/auth.json" ]]; then
-    volumes="$volumes --mount type=bind,source=${XDG_RUNTIME_DIR-}/containers/auth.json,target=/root/.docker/config.json,readonly"
-elif [[ -f "${HOME}/.docker/config.json" ]]; then
-    volumes="$volumes --mount type=bind,source=${HOME}/.docker/config.json,target=/root/.docker/config.json,readonly"
-fi
-
-if [ -n "$DOCKER_CA_CERT_FILE" ]; then
-    volumes="$volumes -v ${DOCKER_CA_CERT_FILE}:${DOCKERIZED_CUSTOM_CA_PATH}:ro,z"
-fi
 
 # Run the command
 test -t 1 && USE_TTY="-it"
