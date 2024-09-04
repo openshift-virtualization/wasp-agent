@@ -85,11 +85,6 @@ echo "Rsyncing ${WASP_DIR} to container"
 # Copy wasp into the persistent docker volume
 _rsync \
     --delete \
-    --exclude 'bazel-bin' \
-    --exclude 'bazel-genfiles' \
-    --exclude 'bazel-wasp' \
-    --exclude 'bazel-out' \
-    --exclude 'bazel-testlogs' \
     --exclude 'cluster-up/cluster/**/.kubectl' \
     --exclude 'cluster-up/cluster/**/.oc' \
     --exclude 'cluster-up/cluster/**/.kubeconfig' \
@@ -128,11 +123,6 @@ ${WASP_CRI} exec ${USE_TTY} ${BAZEL_BUILDER_SERVER} /entrypoint-bazel.sh "$@"
 
 # Copy the whole wasp data out to get generated sources and formatting changes
 _rsync \
-    --exclude 'bazel-bin' \
-    --exclude 'bazel-genfiles' \
-    --exclude 'bazel-wasp' \
-    --exclude 'bazel-out' \
-    --exclude 'bazel-testlogs' \
     --exclude 'cluster-up/cluster/**/.kubectl' \
     --exclude 'cluster-up/cluster/**/.oc' \
     --exclude 'cluster-up/cluster/**/.kubeconfig' \
