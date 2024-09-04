@@ -25,9 +25,6 @@ SWAP_UTILIZATION_THRESHOLD_FACTOR=${SWAP_UTILIZATION_THRESHOLD_FACTOR:-0.8}
 DEPLOY_PROMETHEUS_RULE=${DEPLOY_PROMETHEUS_RULE:-false}
 CR_NAME=${CR_NAME:-wasp}
 
-# update this whenever new builder tag is created
-BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/bmordeha/kubevirt-wasp-bazel-builder:2407031059-d673c1a}
-
 function parseTestOpts() {
     pkgs=""
     test_args=""

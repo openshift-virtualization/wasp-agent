@@ -21,6 +21,9 @@ source "${script_dir}"/config.sh
 
 mkdir -p "${WASP_DIR}/_out"
 
+# update this whenever new builder tag is created
+BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/bmordeha/kubevirt-wasp-bazel-builder:2407031059-d673c1a}
+
 BUILDER_VOLUME="kubevirt-wasp-volume"
 BAZEL_BUILDER_SERVER="${BUILDER_VOLUME}-bazel-server"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
