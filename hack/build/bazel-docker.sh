@@ -25,7 +25,6 @@ mkdir -p "${WASP_DIR}/_out"
 BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/bmordeha/kubevirt-wasp-bazel-builder:2407031059-d673c1a}
 
 BUILDER_VOLUME="kubevirt-wasp-volume"
-BAZEL_BUILDER_SERVER="${BUILDER_VOLUME}-bazel-server"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
 DOCKERIZED_CUSTOM_CA_PATH="/etc/pki/ca-trust/source/anchors/custom-ca.crt"
 
@@ -112,14 +111,9 @@ if [ -n "$DOCKER_CA_CERT_FILE" ]; then
     volumes="$volumes -v ${DOCKER_CA_CERT_FILE}:${DOCKERIZED_CUSTOM_CA_PATH}:ro,z"
 fi
 
-if [ -z "$(${WASP_CRI} ps --format '{{.Names}}' | grep ${BAZEL_BUILDER_SERVER})" ]; then
-   ${WASP_CRI} run --ulimit nofile=10000:10000 $DISABLE_SECCOMP --network host -d ${volumes} --security-opt label=disable --rm --name ${BAZEL_BUILDER_SERVER} -e "GOPATH=/root/go" -w "/root/go/src/kubevirt.io/wasp-agent"  ${BUILDER_IMAGE} hack/build/bazel-server.sh
-fi
-
-echo "Starting bazel server"
 # Run the command
 test -t 1 && USE_TTY="-it"
-${WASP_CRI} exec ${USE_TTY} ${BAZEL_BUILDER_SERVER} /entrypoint-bazel.sh "$@"
+${WASP_CRI} exec ${USE_TTY} ${RSYNC_CID_WASP} /entrypoint-bazel.sh "$@"
 
 # Copy the whole wasp data out to get generated sources and formatting changes
 _rsync \
