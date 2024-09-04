@@ -137,4 +137,3 @@ fi
 if [ "$SYNC_OUT" = "true" ]; then
     _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}
 fi
-${WASP_CRI} rm --force kubevirt-wasp-volume-bazel-server
