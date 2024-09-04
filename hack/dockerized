@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
 # Source common without doing any bootstrap work at this stage
 # Bootstrapping should be done inside the build container
-source $(dirname "$0")/common.sh
+source $(dirname "$0")/build/common.sh
 
 if [ "${WASP_RUN_UNNESTED}" == "true" ]; then
     /bin/bash -c "$@"
@@ -12,11 +12,10 @@ fi
 
 fail_if_cri_bin_missing
 
-wasp_builder_version="v1.1"
-default_wasp_builder_image="quay.io/kubevirt/builder:${wasp_builder_version}"
-kubevirt_cross_compile_image="quay.io/kubevirt/builder-cross:${wasp_builder_version}"
+wasp_builder_version="2409032128-2038409"
+default_wasp_builder_image="quay.io/openshift-virtualization/wasp-agent-builder:${wasp_builder_version}"
 
-WASP_BUILDER_IMAGE=${WASP_BUILDER_IMAGE:-"${default_kubevirt_builder_image}"}
+WASP_BUILDER_IMAGE=${WASP_BUILDER_IMAGE:-"${default_wasp_builder_image}"}
 
 SYNC_OUT=${SYNC_OUT:-true}
 
@@ -29,35 +28,35 @@ TEMPFILE=".rsynctemp"
 CONTAINER_ENV="--env HTTP_PROXY=${HTTP_PROXY} --env HTTPS_PROXY=${HTTP_PROXY} --env NO_PROXY=${NO_PROXY}"
 
 # Create the persistent container volume
-if [ -z "$($KUBEVIRT_CRI volume list | grep ${BUILDER})" ]; then
-    $KUBEVIRT_CRI volume create ${BUILDER}
+if [ -z "$($WASP_CRI volume list | grep ${BUILDER})" ]; then
+    $WASP_CRI volume create ${BUILDER}
 fi
 
 selinux_bind_options=",z"
 # Using Podman and MacOS and 'z' bind option may not work correctly.
 # See: https://github.com/containers/podman/issues/13631
-if [[ $KUBEVIRT_CRI = podman* ]] && [[ "$(uname -s)" == "Darwin" ]]; then
+if [[ $WASP_CRI = podman* ]] && [[ "$(uname -s)" == "Darwin" ]]; then
     selinux_bind_options=""
 fi
 
 # Make sure that the output directory exists on both sides
-$KUBEVIRT_CRI run ${CONTAINER_ENV} -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --rm ${WASP_BUILDER_IMAGE} mkdir -p /root/go/src/github.com/openshift-virtualization/wasp-agent/_out
+$WASP_CRI run ${CONTAINER_ENV} -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --rm ${WASP_BUILDER_IMAGE} mkdir -p /root/go/src/github.com/openshift-virtualization/wasp-agent/_out
 mkdir -p ${OUT_DIR}
 
 # Start an rsyncd instance and make sure it gets stopped after the script exits
-RSYNC_CID=$($KUBEVIRT_CRI run ${CONTAINER_ENV} -d -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --cap-add SYS_CHROOT --expose 873 -P ${WASP_BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
+RSYNC_CID=$($WASP_CRI run ${CONTAINER_ENV} -d -v "${BUILDER}:/root:rw${selinux_bind_options}" --security-opt "label=disable" --cap-add SYS_CHROOT --expose 873 -P ${WASP_BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
 
 function finish() {
-    $KUBEVIRT_CRI stop --time 1 ${RSYNC_CID} >/dev/null 2>&1
-    $KUBEVIRT_CRI rm -f ${RSYNC_CID} >/dev/null 2>&1
+    $WASP_CRI stop --time 1 ${RSYNC_CID} >/dev/null 2>&1
+    $WASP_CRI rm -f ${RSYNC_CID} >/dev/null 2>&1
 }
 trap finish EXIT
 
-RSYNCD_PORT=$($KUBEVIRT_CRI port $RSYNC_CID 873 | cut -d':' -f2)
+RSYNCD_PORT=$($WASP_CRI port $RSYNC_CID 873 | cut -d':' -f2)
 
 rsynch_fail_count=0
 
-while ! rsync ${WASP_AGENT_DIR}/${RSYNCTEMP} "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/${RSYNCTEMP}" &>/dev/null; do
+while ! rsync ${WASP_DIR}/${RSYNCTEMP} "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/${RSYNCTEMP}" &>/dev/null; do
     if [[ "$rsynch_fail_count" -eq 0 ]]; then
         printf "Waiting for rsyncd to be ready"
         sleep .1
@@ -87,7 +86,7 @@ _rsync \
     --exclude 'cluster-up/cluster/**/.kubeconfig' \
     --exclude "_out" \
     --exclude ".vagrant" \
-    ${WASP_AGENT_DIR}/ \
+    ${WASP_DIR}/ \
     "rsync://root@127.0.0.1:${RSYNCD_PORT}/build"
 
 volumes="-v ${BUILDER}:/root:rw${selinux_bind_options}"
@@ -97,7 +96,7 @@ mkdir -p "${HOME}/.docker/secrets"
 volumes="$volumes -v ${HOME}/.docker/secrets:/root/.docker/secrets:ro${selinux_bind_options}"
 
 # Use a bind-mount to expose docker/podman auth file to the container
-if [[ $KUBEVIRT_CRI = podman* ]] && [[ -f "${XDG_RUNTIME_DIR}/containers/auth.json" ]]; then
+if [[ $WASP_CRI = podman* ]] && [[ -f "${XDG_RUNTIME_DIR}/containers/auth.json" ]]; then
     volumes="$volumes --mount type=bind,source=${XDG_RUNTIME_DIR}/containers/auth.json,target=/root/.docker/config.json,readonly"
 elif [[ -f "${HOME}/.docker/config.json" && "$(cat ${HOME}/.docker/config.json | jq 'has("credHelpers")')" != "true" ]]; then
     volumes="$volumes --mount type=bind,source=${HOME}/.docker/config.json,target=/root/.docker/config.json,readonly"
@@ -121,12 +120,12 @@ fi
 
 # Update cert trust, if custom is provided
 if [ -n "$DOCKER_CA_CERT_FILE" ] && [ -f "$DOCKER_CA_CERT_FILE" ]; then
-    $KUBEVIRT_CRI exec ${CONTAINER_ENV} ${RSYNC_CID} /entrypoint.sh "/usr/bin/update-ca-trust"
+    $WASP_CRI exec ${CONTAINER_ENV} ${RSYNC_CID} /entrypoint.sh "/usr/bin/update-ca-trust"
 fi
 
 # Run the command
 test -t 1 && USE_TTY="-it"
-if ! $KUBEVIRT_CRI exec ${CONTAINER_ENV} -w /root/go/src/github.com/openshift-virtualization/wasp-agent ${USE_TTY} ${RSYNC_CID} /entrypoint.sh "$@"; then
+if ! $WASP_CRI exec ${CONTAINER_ENV} -w /root/go/src/github.com/openshift-virtualization/wasp-agent ${USE_TTY} ${RSYNC_CID} /entrypoint.sh "$@"; then
     # Copy the build output out of the container, make sure that _out exactly matches the build result
     if [ "$SYNC_OUT" = "true" ]; then
         _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}
@@ -144,9 +143,9 @@ _rsync \
     --exclude ".vagrant" \
     --exclude ".git" \
     "rsync://root@127.0.0.1:${RSYNCD_PORT}/build" \
-    ${WASP_AGENT_DIR}/
+    ${WASP_DIR}/
 
-_rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/manifests/generated/" "${WASP_AGENT_DIR}/manifests/generated"
+_rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/build/manifests/generated/" "${WASP_DIR}/manifests/generated"
 if [ "$SYNC_VENDOR" = "true" ]; then
     _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/vendor" "${VENDOR_DIR}/"
 fi

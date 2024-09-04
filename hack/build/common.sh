@@ -11,44 +11,52 @@
 #WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #See the License for the specific language governing permissions and
 #limitations under the License.
+#!/usr/bin/env bash
 
-determine_wasp_bin() {
-    if [ "${KUBEVIRTCI_RUNTIME-}" = "podman" ]; then
+determine_cri_bin() {
+    if [ "${WASP_CRI-}" = "podman" ]; then
         echo podman
-    elif [ "${KUBEVIRTCI_RUNTIME-}" = "docker" ]; then
+    elif [ "${WASP_CRI-}" = "docker" ]; then
         echo docker
     else
-        if docker ps >/dev/null 2>&1; then
-            echo docker
-        elif podman ps >/dev/null 2>&1; then
+        if podman ps >/dev/null 2>&1; then
             echo podman
+        elif docker ps >/dev/null 2>&1; then
+            echo docker
         else
             echo ""
         fi
     fi
 }
 
+fail_if_cri_bin_missing() {
+    if [ -z "${WASP_CRI}" ]; then
+        echo >&2 "no working container runtime found. Neither docker nor podman seems to work."
+        exit 1
+    fi
+}
 
-WASP_DIR="$(cd $(dirname $0)/../../ && pwd -P)"
+WASP_DIR="$(
+    cd "$(dirname "$BASH_SOURCE[0]")/../../"
+    pwd
+)"
+WASP_CRI="$(determine_cri_bin)"
 
+# Use this environment variable to set a local path to a custom CA certificate for
+# a private HTTPS docker registry. The intention is that this will be merged with the trust
+# store in the build environment.
 
+DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
+DOCKERIZED_CUSTOM_CA_PATH="/etc/pki/ca-trust/source/anchors/custom-ca.crt"
 BIN_DIR=${WASP_DIR}/bin
-OUT_DIR=${WASP_DIR}/_out
+OUT_DIR=$WASP_DIR/_out
+ARTIFACTS=${ARTIFACTS:-${OUT_DIR}/artifacts}
 CMD_OUT_DIR=${WASP_DIR}/cmd
 TESTS_OUT_DIR=${OUT_DIR}/tests
-BUILD_DIR=${WASP_DIR}/hack/build
+BUILD_DIR=${WASP_DIR}/hack/builder
 MANIFEST_TEMPLATE_DIR=${WASP_DIR}/manifests/templates
 MANIFEST_GENERATED_DIR=${WASP_DIR}/manifests/generated
 CACHE_DIR=${OUT_DIR}/gocache
-VENDOR_DIR=${WASP_DIR}/vendor
+VENDOR_DIR=$WASP_DIR/vendor
 ARCHITECTURE="${BUILD_ARCH:-$(uname -m)}"
 HOST_ARCHITECTURE="$(uname -m)"
-WASP_CRI="$(determine_wasp_bin)"
-if [ "${WASP_CRI}" = "docker" ]; then
-   WASP_CONTAINER_BUILDCMD=${WASP_CONTAINER_BUILDCMD:-docker}
-else
-   WASP_CONTAINER_BUILDCMD=${WASP_CONTAINER_BUILDCMD:-buildah}
-fi
-echo "WASP_CRI: ${WASP_CRI}, WASP_CONTAINER_BUILDCMD: ${WASP_CONTAINER_BUILDCMD}"
-
-
