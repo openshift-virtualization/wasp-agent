@@ -17,7 +17,6 @@
 set -e
 script_dir="$(cd "$(dirname "$0")" && pwd -P)"
 source "${script_dir}"/common.sh
-source "${script_dir}"/config.sh
 
 FORCE_PUSH=${FORCE_PUSH:-false}
 
