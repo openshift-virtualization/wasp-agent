@@ -113,7 +113,13 @@ fi
 
 # Run the command
 test -t 1 && USE_TTY="-it"
-${WASP_CRI} exec ${USE_TTY} ${RSYNC_CID_WASP} /entrypoint-bazel.sh "$@"
+if ! $WASP_CRI exec -w /root/go/src/github.com/openshift-virtualization/wasp-agent ${USE_TTY} ${RSYNC_CID} /entrypoint.sh "$@"; then
+    # Copy the build output out of the container, make sure that _out exactly matches the build result
+    if [ "$SYNC_OUT" = "true" ]; then
+        _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}
+    fi
+    exit 1
+fi
 
 # Copy the whole wasp data out to get generated sources and formatting changes
 _rsync \
