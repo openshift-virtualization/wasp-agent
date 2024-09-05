@@ -244,9 +244,14 @@ func (psc *PodStatsCollectorImpl) ListPodsSummary() ([]PodSummary, error) {
 			podStats.ProcessStats = cadvisorInfoToProcessStats(podInfo)
 			if podStats.Memory != nil {
 				psc.PodSummary[string(podUID)].MemoryWorkingSetBytes = podStats.Memory.WorkingSetBytes
+			} else {
+				psc.PodSummary[string(podUID)].MemoryWorkingSetBytes = uint64Ptr(0)
 			}
+
 			if podStats.Swap != nil {
 				psc.PodSummary[string(podUID)].MemorySwapCurrentBytes = podStats.Swap.SwapUsageBytes
+			} else {
+				psc.PodSummary[string(podUID)].MemorySwapCurrentBytes = uint64Ptr(0)
 			}
 		}
 		podSummaryList = append(podSummaryList, *psc.PodSummary[string(podUID)])
@@ -545,6 +550,11 @@ func cadvisorInfoToSwapStats(info *cadvisorapiv2.ContainerInfo) *statsapi.SwapSt
 		if !IsMemoryUnlimited(info.Spec.Memory.SwapLimit) {
 			swapAvailableBytes := info.Spec.Memory.SwapLimit - cstat.Memory.Swap
 			swapStats.SwapAvailableBytes = &swapAvailableBytes
+		}
+	} else {
+		swapStats = &statsapi.SwapStats{
+			Time:           metav1.NewTime(cstat.Timestamp),
+			SwapUsageBytes: uint64Ptr(0),
 		}
 	}
 
