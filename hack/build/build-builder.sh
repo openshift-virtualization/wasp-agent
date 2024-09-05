@@ -37,7 +37,7 @@ function build_and_push() {
   fi
 
   BUILDER_SPEC="${BUILD_DIR}/docker/builder"
-  UNTAGGED_BUILDER_IMAGE=quay.io/bmordeha/kubevirt-wasp-bazel-builder
+  UNTAGGED_BUILDER_IMAGE=quay.io/openshift-virtualization/wasp-agent-builder
   BUILDER_TAG=$(date +"%y%m%d%H%M")-$(git rev-parse --short HEAD)
   BUILDER_MANIFEST=${UNTAGGED_BUILDER_IMAGE}:${BUILDER_TAG}
   echo "$DOCKER_PREFIX:$DOCKER_TAG"
@@ -51,7 +51,7 @@ function build_and_push() {
       docker push ${BUILDER_MANIFEST}
   fi
 
-  DIGEST=$(docker images --digests | grep ${UNTAGGED_BUILDER_IMAGE} | grep ${BUILDER_TAG} | awk '{ print $4 }')
+  DIGEST=$(${WASP_CRI} images --digests | grep ${UNTAGGED_BUILDER_IMAGE} | grep ${BUILDER_TAG} | awk '{ print $4 }')
   echo "Image: ${BUILDER_MANIFEST}"
   echo "Digest: ${DIGEST}"
 }

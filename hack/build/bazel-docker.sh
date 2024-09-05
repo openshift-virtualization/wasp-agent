@@ -22,9 +22,9 @@ source "${script_dir}"/config.sh
 mkdir -p "${WASP_DIR}/_out"
 
 # update this whenever new builder tag is created
-BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/bmordeha/kubevirt-wasp-bazel-builder:2407031059-d673c1a}
+BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/openshift-virtualization/wasp-agent-builder:2409050858-9e0a2aa}
 
-BUILDER_VOLUME="kubevirt-wasp-volume"
+BUILDER_VOLUME="wasp-volume"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
 DOCKERIZED_CUSTOM_CA_PATH="/etc/pki/ca-trust/source/anchors/custom-ca.crt"
 
@@ -40,12 +40,12 @@ fi
 
 # Make sure that the output directory exists
 echo "Making sure output directory exists..."
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/github.com/openshift-virtualization/wasp-agent/_out
+${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/github.com/openshift-virtualization/wasp-agent/_out
 
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/github.com/openshift-virtualization/wasp-agent
+${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/github.com/openshift-virtualization/wasp-agent
 echo "Starting rsyncd"
 # Start an rsyncd instance and make sure it gets stopped after the script exits
-RSYNC_CID_WASP=$(${WASP_CRI} run -d -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --cap-add SYS_CHROOT --expose 873 -P --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
+RSYNC_CID_WASP=$(${WASP_CRI} run -d -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --cap-add SYS_CHROOT --expose 873 -P --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
 
 function finish() {
     ${WASP_CRI} stop --time 1 ${RSYNC_CID_WASP} >/dev/null 2>&1
@@ -93,7 +93,7 @@ _rsync \
 
 # Run the command
 test -t 1 && USE_TTY="-it"
-if ! $WASP_CRI exec -w /root/go/src/github.com/openshift-virtualization/wasp-agent ${USE_TTY} ${RSYNC_CID} /entrypoint.sh "$@"; then
+if ! $WASP_CRI exec -w /root/go/src/github.com/openshift-virtualization/wasp-agent ${USE_TTY} ${RSYNC_CID_WASP} /entrypoint.sh "$@"; then
     # Copy the build output out of the container, make sure that _out exactly matches the build result
     if [ "$SYNC_OUT" = "true" ]; then
         _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}

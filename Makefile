@@ -63,7 +63,7 @@ test: bootstrap-ginkgo
 	hack/build/bazel-docker.sh "ACK_GINKGO_DEPRECATIONS=${ACK_GINKGO_DEPRECATIONS} ./hack/build/run-unit-tests.sh ${WHAT}"
 
 build-functest:
-	${DO_BAZ} ./hack/build/build-functest.sh
+	hack/build/bazel-docker.sh ./hack/build/build-functest.sh
 
 functest:  WHAT = ./tests/...
 functest: build-functest
