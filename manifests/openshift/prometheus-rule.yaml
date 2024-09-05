@@ -10,36 +10,6 @@ spec:
   groups:
     - name: alerts.rules
       rules:
-        - alert: NodeHighMemoryUtilization
-          annotations:
-            description: Memory utilization (RAM + Swap) at {{ $labels.instance }} is
-              very high, exceeding 95% of total usable RAM. Ensure adequate memory resources
-              are available to prevent performance degradation.
-            runbook_url: https://github.com/openshift-virtualization/wasp-agent/tree/main/docs/runbooks/NodeHighMemoryUtilization.md
-            summary: Memory utilization at {{ $labels.instance }} exceeds 95%.
-          expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes + node_memory_SwapTotal_bytes
-            - node_memory_SwapFree_bytes) / node_memory_MemTotal_bytes > 0.95
-          for: 1m
-          labels:
-            kubernetes_operator_component: kubevirt
-            kubernetes_operator_part_of: kubevirt
-            operator_health_impact: warning
-            severity: warning
-        - alert: NodeCriticalMemoryUtilization
-          annotations:
-            description: Memory utilization (RAM + Swap) at {{ $labels.instance }} is
-              critically high, exceeding 105% of total usable RAM. Immediate action is
-              required to ensure system stability and prevent performance degradation.
-            runbook_url: https://github.com/openshift-virtualization/wasp-agent/tree/main/docs/runbooks/NodeCriticalMemoryUtilization.md
-            summary: Memory utilization at {{ $labels.instance }} exceeds 105%.
-          expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes + node_memory_SwapTotal_bytes
-            - node_memory_SwapFree_bytes) / node_memory_MemTotal_bytes > 1.05
-          for: 1m
-          labels:
-            kubernetes_operator_component: kubevirt
-            kubernetes_operator_part_of: kubevirt
-            operator_health_impact: critical
-            severity: critical
         - alert: NodeHighSwapActivity
           annotations:
             description: High swap activity detected at {{ $labels.instance }}. The rate
