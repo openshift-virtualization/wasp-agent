@@ -25,7 +25,7 @@ spec:
       containers:
         - name: wasp-agent
           image: >-
-            quay.io/openshift-virtualization/wasp-agent:latest
+            quay.io/openshift-virtualization/wasp-agent:v1.0
           imagePullPolicy: Always
           env:
           - name: "FSROOT"
