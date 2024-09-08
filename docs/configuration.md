@@ -81,9 +81,14 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 $ oc wait mcp worker --for condition=Updated=True --timeout=-1s
 ```
 
-5. Deploy `wasp-agent`
-   Create a `DaemonSet` according to the following
-   [example](../manifests/openshift/ds.yaml).
+5. Deploy `wasp-agent` <br>
+ * Determine wasp-agent image pull URL:
+```console
+$ OCP_VERSION=$(oc get clusterversion | awk 'NR==2' |cut -d' ' -f4 | cut -d'-' -f1)
+$ oc get csv kubevirt-hyperconverged-operator.v${OCP_VERSION} -nopenshift-cnv -ojson | jq '.spec.relatedImages[] | select(.name|test(".*wasp-agent.*")) | .image'
+```
+  * Create a `DaemonSet` with the relevant image URL according to the following
+     [example](../manifests/openshift/ds.yaml).
 
 > [!IMPORTANT]
 > The wasp-agent  manages pod eviction when the system is heavily loaded and
