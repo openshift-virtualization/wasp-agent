@@ -37,16 +37,13 @@ SWAP usage is supported on worker nodes only.
 > swap usage for containers on the node level.
 > The low-level nature requires the `DaemonSet` to be privileged.
 
-1. Configure `Kubelet` to permit swap
-   Create a `KubeletConfiguration` according to the following
-   [example](../manifests/openshift/kubelet-configuration-with-swap.yaml).
+1. #### Create a `KubeletConfiguration` according to the following [example](../manifests/openshift/kubelet-configuration-with-swap.yaml).
 
-2. Wait for the worker nodes to sync with the new config:
+2. #### Wait for the worker nodes to sync with the new config:
 ```console
 $ oc wait mcp worker --for condition=Updated=True --timeout=-1s
 ```
-
-3. Create `MachineConfig` to provision swap according to the following [example](../manifests/openshift/machineconfig-add-swap.yaml)
+3. #### Create `MachineConfig` to provision swap according to the following [example](../manifests/openshift/machineconfig-add-swap.yaml)
 
 > [!IMPORTANT]
 > In order to have enough swap for the worst case scenario, it must
@@ -64,10 +61,9 @@ $ oc wait mcp worker --for condition=Updated=True --timeout=-1s
 >                     = 16 GB * (0.5)
 >                     =  8 GB
 
-Create a `MachineConfig` according to the following
-[example](../manifests/openshift/machineconfig-add-swap.yaml).
+4. #### Create a `MachineConfig` according to the following [example](../manifests/openshift/machineconfig-add-swap.yaml).
 
-3. Create a privileged service account:
+5. #### Create a privileged service account:
 
 ```console
 $ oc adm new-project wasp
@@ -76,19 +72,18 @@ $ oc create clusterrolebinding wasp --clusterrole=cluster-admin --serviceaccount
 $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
 
-4. Wait for the worker nodes to sync with the new config:
+6. #### Wait for the worker nodes to sync with the new config:
 ```console
 $ oc wait mcp worker --for condition=Updated=True --timeout=-1s
 ```
 
-5. Deploy `wasp-agent` <br>
- * Determine wasp-agent image pull URL:
+7. #### Deploy `wasp-agent` <br>
+ * ##### Determine wasp-agent image pull URL:
 ```console
 $ OCP_VERSION=$(oc get clusterversion | awk 'NR==2' |cut -d' ' -f4 | cut -d'-' -f1)
 $ oc get csv kubevirt-hyperconverged-operator.v${OCP_VERSION} -nopenshift-cnv -ojson | jq '.spec.relatedImages[] | select(.name|test(".*wasp-agent.*")) | .image'
 ```
-  * Create a `DaemonSet` with the relevant image URL according to the following
-     [example](../manifests/openshift/ds.yaml).
+  * ##### Create a `DaemonSet` with the relevant image URL according to the following [example](../manifests/openshift/ds.yaml).
 
 > [!IMPORTANT]
 > The wasp-agent  manages pod eviction when the system is heavily loaded and
@@ -118,15 +113,12 @@ $ oc get csv kubevirt-hyperconverged-operator.v${OCP_VERSION} -nopenshift-cnv -o
 > Additionally, the `AVERAGE_WINDOW_SIZE_SECONDS` environment
 > variable determines the time frame for calculating the average.
 
-
-5. Deploy alerting rules according to the following
-   [example](../manifests/openshift/prometheus-rule.yaml) and
-   add the cluster-monitoring label to the wasp namespace.
+8. #### Deploy alerting rules according to the following [example](../manifests/openshift/prometheus-rule.yaml) and add the cluster-monitoring label to the wasp namespace.
 ```console
 $ oc label namespace wasp openshift.io/cluster-monitoring="true"
 ```
 
-6. Configure OpenShift Virtualization to use memory overcommit using
+9. #### Configure OpenShift Virtualization to use memory overcommit using
 
    a. Via the OpenShift Console: <br>
        **Virtualization -> Overview -> Settings -> General Settings -> Memory Density** <br>
@@ -142,18 +134,18 @@ $ oc patch --type=merge \
 
 ### Upgrade path
 For users of wasp-agent v1.0, which lacks LimitedSwap and eviction support, here is the upgrade path:
-1. Adjust KubeletConfig:
+1. #### Adjust KubeletConfig:
    If you have installed the KubeletConfiguration object from version v1.0, you need to update it. 
    This can be done by applying the updated [KubeletConfiguration example](../manifests/openshift/kubelet-configuration-with-swap.yaml).
 ```console
 $ oc replace -f <../manifests/openshift/kubelet-configuration-with-swap.yaml>
 ```
-2. Update DaemonSet:
+2. #### Update DaemonSet (make sure the image URL is valid):
    Apply the updated DaemonSet by using the provided [DaemonSet example](../manifests/openshift/ds.yaml).
 ```console
 $ oc apply -f <../manifests/openshift/ds.yaml>
 ```
-3. Update monitoring object:
+3. #### Update monitoring object:
 ```console
 $ oc delete AlertingRule wasp-alerts -nopenshift-monitoring
 $ oc create -f <../manifests/openshift/prometheus-rule.yaml>
