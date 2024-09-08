@@ -35,7 +35,7 @@ SWAP usage is supported on worker nodes only.
 > swap usage for containers on the node level.
 > The low-level nature requires the `DaemonSet` to be privileged.
 
-1. Create a privileged service account:
+1. #### Create a privileged service account:
 
 ```console
 $ oc adm new-project wasp
@@ -44,15 +44,18 @@ $ oc adm policy add-cluster-role-to-user cluster-admin -z wasp
 $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 ```
 
-2. Deploy `wasp-agent`
-   Create a `DaemonSet` according to the following
-   [example](../manifests/ds.yaml).
+2. #### Deploy `wasp-agent` <br>
+* ##### Determine wasp-agent image pull URL:
+```console
+$ OCP_VERSION=$(oc get clusterversion | awk 'NR==2' |cut -d' ' -f4 | cut -d'-' -f1)
+$ oc get csv kubevirt-hyperconverged-operator.v${OCP_VERSION} -nopenshift-cnv -ojson | jq '.spec.relatedImages[] | select(.name|test(".*wasp-agent.*")) | .image'
+```
+* ##### Create a `DaemonSet` with the relevant image URL according to the following [example](../manifests/ds.yaml).
 
-3. Configure `Kubelet` to permit swap
-   Create a `KubeletConfiguration` according to the following
-   [example](../manifests/kubelet-configuration-with-swap.yaml).
 
-4. Create `MachineConfig` to provision swap according to the following [example](../manifests/machineconfig-add-swap.yaml)
+3. #### Create a `KubeletConfiguration` according to the following [example](../manifests/kubelet-configuration-with-swap.yaml).
+
+4. #### Create `MachineConfig` to provision swap according to the following [example](../manifests/machineconfig-add-swap.yaml)
 
 > [!IMPORTANT]
 > In order to have enough swap for the worst case scenario, it must
@@ -70,13 +73,11 @@ $ oc adm policy add-scc-to-user -n wasp privileged -z wasp
 >                     = 16 GB * (0.5)
 >                     =  8 GB
 
-   Create a `MachineConfig` according to the following
-   [example](../manifests/machineconfig-add-swap.yaml).
+5. #### Create a `MachineConfig` according to the following [example](../manifests/machineconfig-add-swap.yaml).
 
-5. Deploy alerting rules according to the following
-   [example](../manifests/prometheus-rules.yaml).
+6. #### Deploy alerting rules according to the following [example](../manifests/prometheus-rules.yaml).
 
-6. Configure OpenShift Virtualization to use memory overcommit using
+7. #### Configure OpenShift Virtualization to use memory overcommit using
 
    a. the OpenShift Console
    b. the following [HCO example](../manifests/hco-set-memory-overcommit.yaml):
