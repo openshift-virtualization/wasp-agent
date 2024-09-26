@@ -22,7 +22,7 @@ source "${script_dir}"/config.sh
 mkdir -p "${WASP_DIR}/_out"
 
 # update this whenever new builder tag is created
-BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/openshift-virtualization/wasp-agent-builder:2409050858-9e0a2aa}
+BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/openshift-virtualization/wasp-agent-builder:2409261312-0878b7f}
 
 BUILDER_VOLUME="wasp-volume"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
