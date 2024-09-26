@@ -20,6 +20,7 @@ source "${script_dir}"/common.sh
 mkdir -p ${TESTS_OUT_DIR}/
 # use vendor
 export GO111MODULE=${GO111MODULE:-off}
+go build -C vendor/github.com/onsi/ginkgo/v2/ginkgo -o /usr/bin/ginkgo
 ginkgo build ${WASP_DIR}/tests/
 mv ${WASP_DIR}/tests/tests.test ${TESTS_OUT_DIR}/
-cp -f /go/bin/ginkgo ${TESTS_OUT_DIR}/
+cp -f /usr/bin/ginkgo ${TESTS_OUT_DIR}/

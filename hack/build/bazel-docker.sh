@@ -21,15 +21,17 @@ source "${script_dir}"/config.sh
 
 mkdir -p "${WASP_DIR}/_out"
 
-BUILDER_VOLUME="kubevirt-wasp-volume"
-BAZEL_BUILDER_SERVER="${BUILDER_VOLUME}-bazel-server"
+# update this whenever new builder tag is created
+BUILDER_IMAGE=${BUILDER_IMAGE:-quay.io/openshift-virtualization/wasp-agent-builder:2409050858-9e0a2aa}
+
+BUILDER_VOLUME="wasp-volume"
 DOCKER_CA_CERT_FILE="${DOCKER_CA_CERT_FILE:-}"
 DOCKERIZED_CUSTOM_CA_PATH="/etc/pki/ca-trust/source/anchors/custom-ca.crt"
 
 DISABLE_SECCOMP=${DISABLE_SECCOMP:-}
 
 SYNC_OUT=${SYNC_OUT:-true}
-SYNC_VENDOR=${SYNC_VENDOR:-true}
+SYNC_VENDOR=${SYNC_VENDOR:-false}
 
 # Create the persistent docker volume
 if [ -z "$(${WASP_CRI} volume list | grep ${BUILDER_VOLUME})" ]; then
@@ -38,12 +40,12 @@ fi
 
 # Make sure that the output directory exists
 echo "Making sure output directory exists..."
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/kubevirt.io/wasp-agent/_out
+${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} mkdir -p /root/go/src/github.com/openshift-virtualization/wasp-agent/_out
 
-${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/kubevirt.io/wasp-agent
+${WASP_CRI} run -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --rm --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} git config --global --add safe.directory /root/go/src/github.com/openshift-virtualization/wasp-agent
 echo "Starting rsyncd"
 # Start an rsyncd instance and make sure it gets stopped after the script exits
-RSYNC_CID_WASP=$(${WASP_CRI} run -d -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --cap-add SYS_CHROOT --expose 873 -P --entrypoint "/entrypoint-bazel.sh" ${BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
+RSYNC_CID_WASP=$(${WASP_CRI} run -d -v "${BUILDER_VOLUME}:/root:rw,z" --security-opt label=disable $DISABLE_SECCOMP --cap-add SYS_CHROOT --expose 873 -P --entrypoint "/entrypoint.sh" ${BUILDER_IMAGE} /usr/bin/rsync --no-detach --daemon --verbose)
 
 function finish() {
     ${WASP_CRI} stop --time 1 ${RSYNC_CID_WASP} >/dev/null 2>&1
@@ -82,11 +84,6 @@ echo "Rsyncing ${WASP_DIR} to container"
 # Copy wasp into the persistent docker volume
 _rsync \
     --delete \
-    --exclude 'bazel-bin' \
-    --exclude 'bazel-genfiles' \
-    --exclude 'bazel-wasp' \
-    --exclude 'bazel-out' \
-    --exclude 'bazel-testlogs' \
     --exclude 'cluster-up/cluster/**/.kubectl' \
     --exclude 'cluster-up/cluster/**/.oc' \
     --exclude 'cluster-up/cluster/**/.kubeconfig' \
@@ -94,42 +91,18 @@ _rsync \
     ${WASP_DIR}/ \
     "rsync://root@127.0.0.1:${RSYNCD_PORT}/build"
 
-volumes="-v ${BUILDER_VOLUME}:/root:rw,z"
-# append .docker directory as volume
-mkdir -p "${HOME}/.docker"
-volumes="$volumes -v ${HOME}/.docker:/root/.docker:ro,z"
-
-if [[ WASP_CRI = podman* ]] && [[ -f "${XDG_RUNTIME_DIR-}/containers/auth.json" ]]; then
-    volumes="$volumes --mount type=bind,source=${XDG_RUNTIME_DIR-}/containers/auth.json,target=/root/.docker/config.json,readonly"
-elif [[ -f "${HOME}/.docker/config.json" ]]; then
-    volumes="$volumes --mount type=bind,source=${HOME}/.docker/config.json,target=/root/.docker/config.json,readonly"
-fi
-
-if [ "${CI}" = "true" ]; then
-    mkdir -p "$HOME/containers"
-    volumes="$volumes -v ${HOME}/containers:/root/containers:ro,z"
-fi
-
-if [ -n "$DOCKER_CA_CERT_FILE" ]; then
-    volumes="$volumes -v ${DOCKER_CA_CERT_FILE}:${DOCKERIZED_CUSTOM_CA_PATH}:ro,z"
-fi
-
-if [ -z "$(${WASP_CRI} ps --format '{{.Names}}' | grep ${BAZEL_BUILDER_SERVER})" ]; then
-   ${WASP_CRI} run --ulimit nofile=10000:10000 $DISABLE_SECCOMP --network host -d ${volumes} --security-opt label=disable --rm --name ${BAZEL_BUILDER_SERVER} -e "GOPATH=/root/go" -w "/root/go/src/kubevirt.io/wasp-agent"  ${BUILDER_IMAGE} hack/build/bazel-server.sh
-fi
-
-echo "Starting bazel server"
 # Run the command
 test -t 1 && USE_TTY="-it"
-${WASP_CRI} exec ${USE_TTY} ${BAZEL_BUILDER_SERVER} /entrypoint-bazel.sh "$@"
+if ! $WASP_CRI exec -w /root/go/src/github.com/openshift-virtualization/wasp-agent ${USE_TTY} ${RSYNC_CID_WASP} /entrypoint.sh "$@"; then
+    # Copy the build output out of the container, make sure that _out exactly matches the build result
+    if [ "$SYNC_OUT" = "true" ]; then
+        _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}
+    fi
+    exit 1
+fi
 
 # Copy the whole wasp data out to get generated sources and formatting changes
 _rsync \
-    --exclude 'bazel-bin' \
-    --exclude 'bazel-genfiles' \
-    --exclude 'bazel-wasp' \
-    --exclude 'bazel-out' \
-    --exclude 'bazel-testlogs' \
     --exclude 'cluster-up/cluster/**/.kubectl' \
     --exclude 'cluster-up/cluster/**/.oc' \
     --exclude 'cluster-up/cluster/**/.kubeconfig' \
@@ -150,4 +123,3 @@ fi
 if [ "$SYNC_OUT" = "true" ]; then
     _rsync --delete "rsync://root@127.0.0.1:${RSYNCD_PORT}/out" ${OUT_DIR}
 fi
-${WASP_CRI} rm --force kubevirt-wasp-volume-bazel-server
