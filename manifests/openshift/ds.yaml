@@ -56,6 +56,9 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: wasp
       terminationGracePeriodSeconds: 5
+      tolerations:
+        - effect: NoSchedule
+          key: waspEvictionTaint
       volumes:
         - hostPath:
             path: /

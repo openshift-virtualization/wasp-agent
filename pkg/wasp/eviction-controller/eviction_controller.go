@@ -2,10 +2,10 @@ package eviction_controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/openshift-virtualization/wasp-agent/pkg/client"
 	"github.com/openshift-virtualization/wasp-agent/pkg/log"
+	wasp_taints "github.com/openshift-virtualization/wasp-agent/pkg/taints"
 	pod_evictor "github.com/openshift-virtualization/wasp-agent/pkg/wasp/pod-evictor"
 	pod_filter "github.com/openshift-virtualization/wasp-agent/pkg/wasp/pod-filter"
 	pod_ranker "github.com/openshift-virtualization/wasp-agent/pkg/wasp/pod-ranker"
@@ -14,7 +14,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	v1lister "k8s.io/client-go/listers/core/v1"
@@ -24,7 +23,6 @@ import (
 
 const (
 	timeToWaitForCacheSync = 10 * time.Second
-	WaspTaint              = "waspEvictionTaint"
 )
 
 type EvictionController struct {
@@ -98,16 +96,16 @@ func (ctrl *EvictionController) handleMemorySwapEviction() {
 		log.Log.Infof(err.Error())
 		return
 	}
-	evicting := nodeHasEvictionTaint(node)
+	evicting := wasp_taints.NodeHasEvictionTaint(node)
 
 	switch {
 	case evicting && !shouldEvict:
-		err := removeWaspEvictionTaint(ctrl.waspCli, node)
+		err := wasp_taints.RemoveWaspEvictionTaint(ctrl.waspCli, node)
 		if err != nil {
 			log.Log.Infof(err.Error())
 		}
 	case !evicting && shouldEvict:
-		err := addWaspEvictionTaint(ctrl.waspCli, node)
+		err := wasp_taints.AddWaspEvictionTaint(ctrl.waspCli, node)
 		if err != nil {
 			log.Log.Infof(err.Error())
 		}
@@ -141,66 +139,6 @@ func (ctrl *EvictionController) handleMemorySwapEviction() {
 		return
 	}
 	ctrl.statsCollector.FlushStats()
-}
-
-func nodeHasEvictionTaint(node *v1.Node) bool {
-	// Check if the node has the specified taint
-	for _, taint := range node.Spec.Taints {
-		if taint.Key == WaspTaint && taint.Effect == v1.TaintEffectNoSchedule {
-			return true
-		}
-	}
-	return false
-}
-
-func addWaspEvictionTaint(waspCli client.WaspClient, node *v1.Node) error {
-	taint := v1.Taint{
-		Key:    WaspTaint,
-		Effect: v1.TaintEffectNoSchedule,
-	}
-
-	taints := append(node.Spec.Taints, taint)
-
-	taintsPatch, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"taints": taints,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to marshal taints patch: %v", err)
-	}
-
-	_, err = waspCli.CoreV1().Nodes().Patch(context.TODO(), node.Name, types.StrategicMergePatchType, taintsPatch, metav1.PatchOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to patch node: %v", err)
-	}
-
-	return nil
-}
-
-func removeWaspEvictionTaint(waspCli client.WaspClient, node *v1.Node) error {
-	var newTaints []v1.Taint
-	for _, taint := range node.Spec.Taints {
-		if taint.Key != WaspTaint {
-			newTaints = append(newTaints, taint)
-		}
-	}
-
-	taintsPatch, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"taints": newTaints,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to marshal taints patch: %v", err)
-	}
-
-	_, err = waspCli.CoreV1().Nodes().Patch(context.TODO(), node.Name, types.StrategicMergePatchType, taintsPatch, metav1.PatchOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to patch node: %v", err)
-	}
-
-	return nil
 }
 
 func waitForSyncedStore(timeout <-chan time.Time, informerSynced func() bool) bool {
