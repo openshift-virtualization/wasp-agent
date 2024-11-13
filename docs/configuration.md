@@ -80,8 +80,7 @@ $ oc wait mcp worker --for condition=Updated=True --timeout=-1s
 7. #### Deploy `wasp-agent` <br>
  * ##### Determine wasp-agent image pull URL:
 ```console
-$ OCP_VERSION=$(oc get clusterversion | awk 'NR==2' |cut -d' ' -f4 | cut -d'-' -f1)
-$ oc get csv kubevirt-hyperconverged-operator.v${OCP_VERSION} -nopenshift-cnv -ojson | jq '.spec.relatedImages[] | select(.name|test(".*wasp-agent.*")) | .image'
+oc get csv -n openshift-cnv -l=operators.coreos.com/kubevirt-hyperconverged.openshift-cnv -ojson | jq '.items[0].spec.relatedImages[] | select(.name|test(".*wasp-agent.*")) | .image'
 ```
   * ##### Create a `DaemonSet` with the relevant image URL according to the following [example](../manifests/openshift/ds.yaml).
 
