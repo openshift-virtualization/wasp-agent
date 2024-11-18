@@ -1,5 +1,9 @@
 # Configuring higher workload density
 
+> [!IMPORTANT]
+> Plesae avoid using the `NodeSwap` feature gate and its corresponding `SwapBehavior` configuration in kubelet.
+> Wasp-agent and node swap feature-gate are mutually exclusive.
+
 You can configure a higher VM workload and pod workload density in your cluster 
 by over-committing memory resources (RAM).
 
