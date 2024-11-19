@@ -2,6 +2,7 @@ package operator
 
 import (
 	"fmt"
+	"github.com/openshift-virtualization/wasp-agent/pkg/taints"
 
 	"github.com/openshift-virtualization/wasp-agent/pkg/monitoring/rules"
 	utils2 "github.com/openshift-virtualization/wasp-agent/pkg/util"
@@ -170,6 +171,9 @@ func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSw
 	container.Env = createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity)
 
 	labels := resources.WithLabels(map[string]string{"name": "wasp"}, utils2.DaemonSetLabels)
+	tolerations := []corev1.Toleration{}
+	tolerations = append(tolerations, taints.GenerateToleration())
+
 	ds := &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
@@ -220,6 +224,7 @@ func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSw
 						},
 					},
 					PriorityClassName: "system-node-critical",
+					Tolerations:       tolerations,
 				},
 			},
 			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
