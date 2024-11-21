@@ -134,7 +134,13 @@ func exceedMemoryLimits(summary summaryFunc) cmpFunc {
 func hasContainerExceedMemoryLimits(pod *v1.Pod, summary stats_collector.PodSummary) bool {
 	for _, container := range pod.Spec.Containers {
 		if rQuantity, ok := container.Resources.Limits[v1.ResourceMemory]; ok {
-			memoryAndSwapSumQuantity := memoryAndSwapUsage(*summary.Containers[container.Name].MemoryWorkingSetBytes, *summary.Containers[container.Name].MemorySwapCurrentBytes)
+			containerStats, exists := summary.Containers[container.Name]
+			if !exists {
+				continue
+			}
+			workingSet := *containerStats.MemoryWorkingSetBytes
+			swapUsage := *containerStats.MemorySwapCurrentBytes
+			memoryAndSwapSumQuantity := memoryAndSwapUsage(workingSet, swapUsage)
 			if memoryAndSwapSumQuantity.Cmp(rQuantity) == 1 {
 				return true
 			}
@@ -143,7 +149,13 @@ func hasContainerExceedMemoryLimits(pod *v1.Pod, summary stats_collector.PodSumm
 
 	for _, container := range pod.Spec.InitContainers {
 		if rQuantity, ok := container.Resources.Limits[v1.ResourceMemory]; ok {
-			memoryAndSwapSumQuantity := memoryAndSwapUsage(*summary.Containers[container.Name].MemoryWorkingSetBytes, *summary.Containers[container.Name].MemorySwapCurrentBytes)
+			containerStats, exists := summary.Containers[container.Name]
+			if !exists {
+				continue
+			}
+			workingSet := *containerStats.MemoryWorkingSetBytes
+			swapUsage := *containerStats.MemorySwapCurrentBytes
+			memoryAndSwapSumQuantity := memoryAndSwapUsage(workingSet, swapUsage)
 			if memoryAndSwapSumQuantity.Cmp(rQuantity) == 1 {
 				return true
 			}
