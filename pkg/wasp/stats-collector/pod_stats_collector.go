@@ -138,7 +138,7 @@ func (psc *PodStatsCollectorImpl) GetPodSummary(pod *v1.Pod) (PodSummary, error)
 			summary.Containers[containerName] = ContainerSummary{
 				MemorySwapMaxBytes:     cinfo.Spec.Memory.SwapLimit,
 				MemoryWorkingSetBytes:  containerStats.Memory.WorkingSetBytes,
-				MemorySwapCurrentBytes: containerStats.Swap.SwapAvailableBytes,
+				MemorySwapCurrentBytes: containerStats.Swap.SwapUsageBytes,
 			}
 		}
 	}
@@ -514,7 +514,9 @@ func cadvisorInfoToCPUandMemoryStats(info *cadvisorapiv2.ContainerInfo) (*statsa
 	} else {
 		memoryStats = &statsapi.MemoryStats{
 			Time:            metav1.NewTime(cstat.Timestamp),
+			UsageBytes:      uint64Ptr(0),
 			WorkingSetBytes: uint64Ptr(0),
+			RSSBytes:        uint64Ptr(0),
 		}
 	}
 	return cpuStats, memoryStats
@@ -553,8 +555,9 @@ func cadvisorInfoToSwapStats(info *cadvisorapiv2.ContainerInfo) *statsapi.SwapSt
 		}
 	} else {
 		swapStats = &statsapi.SwapStats{
-			Time:           metav1.NewTime(cstat.Timestamp),
-			SwapUsageBytes: uint64Ptr(0),
+			Time:               metav1.NewTime(cstat.Timestamp),
+			SwapUsageBytes:     uint64Ptr(0),
+			SwapAvailableBytes: uint64Ptr(0),
 		}
 	}
 
