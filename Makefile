@@ -40,10 +40,10 @@ builder-push:
 	./hack/build/build-builder.sh
 
 cluster-up:
-	eval "KUBEVIRT_RELEASE=${KUBEVIRT_RELEASE} KUBEVIRT_SWAP_ON=true ./cluster-up/up.sh"
+	./hack/cluster-up.sh
 
 cluster-down:
-	./cluster-up/down.sh
+	./kubevirtci/cluster-up/down.sh
 
 push-images:
 	eval "DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG}  ./hack/build/build-docker.sh push"
