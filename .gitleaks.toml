@@ -1,0 +1,5 @@
+[allowlist]
+  description = "kubevirtci allowlist"
+  paths = [
+    '''kubevirtci\/cluster-up\/hack\/common.key$''',
+  ]
