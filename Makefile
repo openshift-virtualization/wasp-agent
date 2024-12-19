@@ -27,10 +27,6 @@ all: build
 
 build:  wasp manifest-generator
 
-ifeq ($(origin KUBEVIRT_RELEASE), undefined)
-	KUBEVIRT_RELEASE="latest_nightly"
-endif
-
 all: manifests build-images
 
 manifests:
