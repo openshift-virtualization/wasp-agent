@@ -14,6 +14,7 @@ spec:
             [Unit]
             Description=Provision and enable swap
             ConditionFirstBoot=no
+            ConditionPathExists=!/var/tmp/swapfile
             
             [Service]
             Type=oneshot
@@ -22,10 +23,22 @@ spec:
             sudo chmod 600 /var/tmp/swapfile && \
             sudo mkswap /var/tmp/swapfile && \
             sudo swapon /var/tmp/swapfile && \
-            free -h && \
-            sudo systemctl set-property --runtime system.slice MemorySwapMax=0 IODeviceLatencyTargetSec=\"/ 50ms\""
+            free -h"
             
             [Install]
             RequiredBy=kubelet-dependencies.target
           enabled: true
           name: swap-provision.service
+        - contents: |
+            [Unit]
+            Description=Restrict swap for system slice
+            ConditionFirstBoot=no
+
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/sh -c "sudo systemctl set-property --runtime system.slice MemorySwapMax=0 IODeviceLatencyTargetSec=\"/ 50ms\""
+
+            [Install]
+            RequiredBy=kubelet-dependencies.target
+          enabled: true
+          name: cgroup-system-slice-config.service
