@@ -178,8 +178,8 @@ func (lsm *LimitedSwapManager) execute(key string) (error, enqueueState) {
 		log.Log.Errorf(err.Error())
 		return err, BackOff
 	}
-	podQos := kubeapiqos.GetPodQOS(pod)
-	setAllContainersSwapToZero := podQos != v1.PodQOSBurstable || kubelettypes.IsCriticalPod(pod)
+
+	setAllContainersSwapToZero := lsm.isAllowedToSwap(pod)
 
 	for _, container := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 		containerState, exist := getContainerState(pod, container)
@@ -320,4 +320,12 @@ func getContainerState(pod *v1.Pod, container v1.Container) (v1.ContainerState, 
 	}
 
 	return v1.ContainerState{}, false
+}
+
+func (lsm *LimitedSwapManager) isAllowedToSwap(pod *v1.Pod) bool {
+	qos := kubeapiqos.GetPodQOS(pod)
+	return qos != v1.PodQOSBurstable ||
+		kubelettypes.IsCriticalPod(pod) ||
+		kubelettypes.IsNodeCriticalPod(pod)
+
 }
