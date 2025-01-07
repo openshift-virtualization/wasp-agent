@@ -1,6 +1,7 @@
 package pod_ranker
 
 import (
+	"github.com/openshift-virtualization/wasp-agent/pkg/log"
 	stats_collector "github.com/openshift-virtualization/wasp-agent/pkg/wasp/stats-collector"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -134,7 +135,23 @@ func exceedMemoryLimits(summary summaryFunc) cmpFunc {
 func hasContainerExceedMemoryLimits(pod *v1.Pod, summary stats_collector.PodSummary) bool {
 	for _, container := range pod.Spec.Containers {
 		if rQuantity, ok := container.Resources.Limits[v1.ResourceMemory]; ok {
-			memoryAndSwapSumQuantity := memoryAndSwapUsage(*summary.Containers[container.Name].MemoryWorkingSetBytes, *summary.Containers[container.Name].MemorySwapCurrentBytes)
+			containerStats, exists := summary.Containers[container.Name]
+			if !exists {
+				continue
+			}
+
+			if containerStats.MemoryWorkingSetBytes == nil {
+				log.Log.Errorf("container %s - MemoryWorkingSetBytes is nil", container.Name)
+				continue
+			}
+			workingSet := *containerStats.MemoryWorkingSetBytes
+
+			if containerStats.MemorySwapCurrentBytes == nil {
+				log.Log.Errorf("container %s - MemorySwapCurrentBytes is nil", container.Name)
+				continue
+			}
+			swapUsage := *containerStats.MemorySwapCurrentBytes
+			memoryAndSwapSumQuantity := memoryAndSwapUsage(workingSet, swapUsage)
 			if memoryAndSwapSumQuantity.Cmp(rQuantity) == 1 {
 				return true
 			}
@@ -143,7 +160,22 @@ func hasContainerExceedMemoryLimits(pod *v1.Pod, summary stats_collector.PodSumm
 
 	for _, container := range pod.Spec.InitContainers {
 		if rQuantity, ok := container.Resources.Limits[v1.ResourceMemory]; ok {
-			memoryAndSwapSumQuantity := memoryAndSwapUsage(*summary.Containers[container.Name].MemoryWorkingSetBytes, *summary.Containers[container.Name].MemorySwapCurrentBytes)
+			containerStats, exists := summary.Containers[container.Name]
+			if !exists {
+				continue
+			}
+			if containerStats.MemoryWorkingSetBytes == nil {
+				log.Log.Errorf("init container %s - MemoryWorkingSetBytes is nil", container.Name)
+				continue
+			}
+			workingSet := *containerStats.MemoryWorkingSetBytes
+
+			if containerStats.MemorySwapCurrentBytes == nil {
+				log.Log.Errorf("init container %s - MemorySwapCurrentBytes is nil", container.Name)
+				continue
+			}
+			swapUsage := *containerStats.MemorySwapCurrentBytes
+			memoryAndSwapSumQuantity := memoryAndSwapUsage(workingSet, swapUsage)
 			if memoryAndSwapSumQuantity.Cmp(rQuantity) == 1 {
 				return true
 			}
