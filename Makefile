@@ -21,14 +21,11 @@
 		goveralls \
 		release-description \
 		bazel-build-images push-images \
-		fossa
+		fossa \
+		bump-kubevirtci
 all: build
 
 build:  wasp manifest-generator
-
-ifeq ($(origin KUBEVIRT_RELEASE), undefined)
-	KUBEVIRT_RELEASE="latest_nightly"
-endif
 
 all: manifests build-images
 
@@ -39,10 +36,10 @@ builder-push:
 	./hack/build/build-builder.sh
 
 cluster-up:
-	eval "KUBEVIRT_RELEASE=${KUBEVIRT_RELEASE} KUBEVIRT_SWAP_ON=true ./cluster-up/up.sh"
+	./hack/cluster-up.sh
 
 cluster-down:
-	./cluster-up/down.sh
+	./kubevirtci/cluster-up/down.sh
 
 push-images:
 	eval "DOCKER_PREFIX=${DOCKER_PREFIX} DOCKER_TAG=${DOCKER_TAG}  ./hack/build/build-docker.sh push"
@@ -89,3 +86,6 @@ fmt:
 
 run: build
 	sudo ./wasp
+
+bump-kubevirtci:
+	./hack/bump-kubevirtci.sh
