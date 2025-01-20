@@ -1,0 +1,1 @@
+kubevirtci_git_hash="2412171619-fbd31717"

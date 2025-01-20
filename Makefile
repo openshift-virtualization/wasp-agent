@@ -21,7 +21,8 @@
 		goveralls \
 		release-description \
 		bazel-build-images push-images \
-		fossa
+		fossa \
+		bump-kubevirtci
 all: build
 
 build:  wasp manifest-generator
@@ -89,3 +90,6 @@ fmt:
 
 run: build
 	sudo ./wasp
+
+bump-kubevirtci:
+	./hack/bump-kubevirtci.sh
