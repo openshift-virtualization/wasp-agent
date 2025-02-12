@@ -12,7 +12,7 @@ function configure_swap_memory () {
     if [ "$KUBEVIRT_SWAP_ON" == "true" ] ;then
       for nodeNum in $(seq -f "%02g" 1 $KUBEVIRT_NUM_NODES); do
           if [ ! -z $KUBEVIRT_SWAP_SIZE_IN_GB  ]; then
-            $ssh node${nodeNum} -- sudo dd if=/dev/zero of=/swapfile count=$KUBEVIRT_SWAP_SIZE_IN_GB bs=1G
+            $ssh node${nodeNum} -- sudo fallocate -l ${KUBEVIRT_SWAP_SIZE_IN_GB}G /swapfile
             $ssh node${nodeNum} -- sudo mkswap /swapfile
           fi
 
