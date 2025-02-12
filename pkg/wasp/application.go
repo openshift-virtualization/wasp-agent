@@ -59,7 +59,6 @@ func Execute() {
 	flag.Parse()
 
 	setCrioSocketSymLink()
-	setOCIHook()
 
 	var app = WaspApp{}
 	swapUtilizationThresholdFactorStr := os.Getenv("SWAP_UTILIZATION_THRESHOLD_FACTOR")
@@ -198,18 +197,6 @@ func setCrioSocketSymLink() {
 	if err != nil {
 		klog.Warningf(err.Error())
 		return
-	}
-}
-
-func setOCIHook() {
-	err := moveFile("/app/OCI-hook/hook.sh", "/host/opt/oci-hook-swap.sh")
-	if err != nil {
-		klog.Warningf(err.Error())
-		return
-	}
-	err = moveFile("/app/OCI-hook/swap-for-burstable.json", "/host/run/containers/oci/hooks.d/swap-for-burstable.json")
-	if err != nil {
-		klog.Warningf(err.Error())
 	}
 }
 
