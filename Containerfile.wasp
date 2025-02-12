@@ -26,7 +26,6 @@ FROM fedora:38
 
 # Copy the binary from the builder stage to the final image
 COPY --from=builder /workdir/app/wasp /app/wasp
-COPY OCI-hook /app/OCI-hook
 
 # Set the working directory to /app
 WORKDIR /app
