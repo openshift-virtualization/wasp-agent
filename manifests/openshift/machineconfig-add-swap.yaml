@@ -19,7 +19,7 @@ spec:
             [Service]
             Type=oneshot
             Environment=SWAP_SIZE_MB=5000
-            ExecStart=/bin/sh -c "sudo dd if=/dev/zero of=/var/tmp/swapfile count=${SWAP_SIZE_MB} bs=1M && \
+            ExecStart=/bin/sh -c "sudo fallocate -l ${SWAP_SIZE_MB}M /var/tmp/swapfile && \
             sudo chmod 600 /var/tmp/swapfile && \
             sudo mkswap /var/tmp/swapfile && \
             sudo swapon /var/tmp/swapfile && \
