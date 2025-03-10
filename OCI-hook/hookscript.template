@@ -10,5 +10,5 @@ POD_NAMESPACE=$(jq -er '.annotations["io.kubernetes.pod.namespace"]' < config.js
 if [[ "$CG_PATH" =~ .*"burst".* ]];
 then
   CONTAINERID=$(jq -er '.linux.cgroupsPath | split(":")[2]' < config.json)
-  runc update $CONTAINERID --memory-swap -1
+  {{ .RuntimeCmd }}
 fi
