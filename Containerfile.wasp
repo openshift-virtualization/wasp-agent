@@ -1,5 +1,5 @@
 # Builder stage
-FROM fedora:38 as builder
+FROM fedora:43 as builder
 
 # Install necessary tools for building
 RUN dnf update -y && dnf install -y \
@@ -22,7 +22,7 @@ WORKDIR /workdir/app
 RUN make wasp
 
 # Final stage
-FROM fedora:38
+FROM fedora:43
 
 # Copy the binary from the builder stage to the final image
 COPY --from=builder /workdir/app/wasp /app/wasp
