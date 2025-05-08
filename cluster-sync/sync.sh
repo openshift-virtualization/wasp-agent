@@ -7,8 +7,8 @@ echo wasp
 
 source ./hack/build/config.sh
 source ./hack/build/common.sh
-source ./cluster-up/hack/common.sh
-source ./cluster-up/cluster/${KUBEVIRT_PROVIDER}/provider.sh
+source ./kubevirtci/cluster-up/hack/common.sh
+source ./kubevirtci/cluster-up/cluster/${KUBEVIRT_PROVIDER}/provider.sh
 
 if [ "${KUBEVIRT_PROVIDER}" = "external" ]; then
    WASP_SYNC_PROVIDER="external"
@@ -90,6 +90,8 @@ function wait_wasp_available {
 }
 
 mkdir -p ./_out/tests
+
+install_kubevirt
 
 # Install WASP
 install_wasp
