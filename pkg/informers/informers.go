@@ -18,11 +18,6 @@ func GetPodInformer(waspCli client.WaspClient) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(listWatcher, &v1.Pod{}, 1*time.Hour, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
-func GetNodeInformer(waspCli client.WaspClient) cache.SharedIndexInformer {
-	listWatcher := NewListWatchFromClient(waspCli.CoreV1().RESTClient(), "nodes", metav1.NamespaceAll, fields.Everything(), labels.Everything())
-	return cache.NewSharedIndexInformer(listWatcher, &v1.Node{}, 1*time.Hour, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-}
-
 // NewListWatchFromClient creates a new ListWatch from the specified client, resource, kubevirtNamespace and field selector.
 func NewListWatchFromClient(c cache.Getter, resource string, namespace string, fieldSelector fields.Selector, labelSelector labels.Selector) *cache.ListWatch {
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
