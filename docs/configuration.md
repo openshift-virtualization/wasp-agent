@@ -21,8 +21,7 @@ others, for example:
 ## Configuring higher workload density with the wasp-agent
 
 [wasp-agent]  is a component that enables an OpenShift cluster to assign 
-SWAP resources to burstable pod and VM workloads. Additionally, wasp-agent 
-is responsible for managing pod evictions when the system is heavily loaded and nodes are at risk.
+SWAP resources to burstable pod and VM workloads. 
 
 SWAP usage is supported on worker nodes only.
 
@@ -88,34 +87,6 @@ oc get csv -n openshift-cnv -l=operators.coreos.com/kubevirt-hyperconverged.open
 ```
   * ##### Create a `DaemonSet` with the relevant image URL according to the following [example](../manifests/openshift/ds.yaml).
 
-> [!IMPORTANT]
-> The wasp-agent  manages pod eviction when the system is heavily loaded and
-> nodes are at risk. Eviction will be triggered if any of the following conditions occur:
-> 1. High Swap I/O Traffic:
->* `averageSwapInPerSecond > maxAverageSwapInPagesPerSecond`
-   and<br>
-   `averageSwapOutPerSecond > maxAverageSwapOutPagesPerSecond`<br><br>
-   This condition is triggered when swap-related I/O traffic
-   is excessively high.
-   The default values for `maxAverageSwapInPagesPerSecond` and
-   `maxAverageSwapOutPagesPerSecond` are both set to 1000, averaged
-   over a 30-second interval by default.
-> 2. High Swap Utilization:
-> * `nodeWorkingSet + nodeSwapUsage < totalNodeMemory + totalSwapMemory * thresholdFactor `<br><br>
-    This condition is triggered when swap utilization is excessively high.
-    This depends on the `NODE_SWAP_SPACE` setting in the machine configuration from
-    step 3 or when the current virtual memory usage exceeds the factored threshold<br><br>
->
->
-> `maxAverageSwapInPagesPerSecond` and `maxAverageSwapOutPagesPerSecond`
-> can be adjusted by modifying the values of the
-> `MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND` and `MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND`.<br><br>
->
->
-> The high swap utilization threshold factor can be adjusted using ``SWAP_UTILIZATION_THRESHOLD_FACTOR`` variable. For example, having a node with 16G RAM and 8G swap, with a threshold factor of 0.8 the threshold would be 16 + 8*0.8 = 16 + 6.4 = 22.4G <br><br>
-> Additionally, the `AVERAGE_WINDOW_SIZE_SECONDS` environment
-> variable determines the time frame for calculating the average.
-
 8. #### Deploy alerting rules according to the following [example](../manifests/openshift/prometheus-rule.yaml) and add the cluster-monitoring label to the wasp namespace.
 ```console
 $ oc label namespace wasp openshift.io/cluster-monitoring="true"
@@ -136,7 +107,7 @@ $ oc patch --type=merge \
 ```
 
 ### Upgrade path
-For users of wasp-agent v1.0, which lacks LimitedSwap and eviction support, here is the upgrade path:
+For users of wasp-agent v1.0, which lacks LimitedSwap, here is the upgrade path:
 1. #### Adjust KubeletConfig:
    If you have installed the KubeletConfiguration object from version v1.0, you need to update it. 
    This can be done by applying the updated [KubeletConfiguration example](../manifests/openshift/kubelet-configuration-with-swap.yaml).

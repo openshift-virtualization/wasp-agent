@@ -2,8 +2,6 @@ package operator
 
 import (
 	"fmt"
-	"github.com/openshift-virtualization/wasp-agent/pkg/taints"
-
 	"github.com/openshift-virtualization/wasp-agent/pkg/monitoring/rules"
 	utils2 "github.com/openshift-virtualization/wasp-agent/pkg/util"
 
@@ -27,20 +25,6 @@ const (
 
 func getClusterPolicyRules() []rbacv1.PolicyRule {
 	rules := []rbacv1.PolicyRule{
-		{
-			APIGroups: []string{
-				"",
-			},
-			Resources: []string{
-				"nodes",
-			},
-			Verbs: []string{
-				"watch",
-				"list",
-				"update",
-				"patch",
-			},
-		},
 		{
 			APIGroups: []string{
 				"",
@@ -96,34 +80,14 @@ func createPrometheusRule(args *FactoryArgs) []client.Object {
 func createDaemonSet(args *FactoryArgs) []client.Object {
 	return []client.Object{
 		createWaspDaemonSet(args.NamespacedArgs.Namespace,
-			args.NamespacedArgs.SwapUtilizationThresholdFactor,
-			args.NamespacedArgs.MaxAverageSwapInPagesPerSecond,
-			args.NamespacedArgs.MaxAverageSwapOutPagesPerSecond,
-			args.NamespacedArgs.AverageWindowSizeSeconds,
 			args.NamespacedArgs.Verbosity,
 			args.Image,
 			args.NamespacedArgs.PullPolicy),
 	}
 }
 
-func createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPerSecond, maxAverageSwapOutPerSecond, averageWindowSizeSeconds, verbosity string) []corev1.EnvVar {
+func createDaemonSetEnvVar(verbosity string) []corev1.EnvVar {
 	return []corev1.EnvVar{
-		{
-			Name:  "SWAP_UTILIZATION_THRESHOLD_FACTOR",
-			Value: swapUtilizationTHresholdFactor,
-		},
-		{
-			Name:  "MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND",
-			Value: maxAverageSwapInPerSecond,
-		},
-		{
-			Name:  "MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND",
-			Value: maxAverageSwapOutPerSecond,
-		},
-		{
-			Name:  "AVERAGE_WINDOW_SIZE_SECONDS",
-			Value: averageWindowSizeSeconds,
-		},
 		{
 			Name:  "VERBOSITY",
 			Value: verbosity,
@@ -143,7 +107,7 @@ func createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPerSe
 	}
 }
 
-func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity, waspImage, pullPolicy string) *appsv1.DaemonSet {
+func createWaspDaemonSet(namespace, verbosity, waspImage, pullPolicy string) *appsv1.DaemonSet {
 	container := corev1.Container{
 		Name:            "wasp-agent",
 		Image:           waspImage,
@@ -168,11 +132,9 @@ func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSw
 			},
 		},
 	}
-	container.Env = createDaemonSetEnvVar(swapUtilizationTHresholdFactor, maxAverageSwapInPagesPerSecond, maxAverageSwapOutPagesPerSecond, averageWindowSizeSeconds, verbosity)
+	container.Env = createDaemonSetEnvVar(verbosity)
 
 	labels := resources.WithLabels(map[string]string{"name": "wasp"}, utils2.DaemonSetLabels)
-	tolerations := []corev1.Toleration{}
-	tolerations = append(tolerations, taints.GenerateToleration())
 
 	ds := &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
@@ -224,7 +186,6 @@ func createWaspDaemonSet(namespace, swapUtilizationTHresholdFactor, maxAverageSw
 						},
 					},
 					PriorityClassName: "system-node-critical",
-					Tolerations:       tolerations,
 				},
 			},
 			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
