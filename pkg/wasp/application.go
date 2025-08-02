@@ -39,7 +39,6 @@ type WaspApp struct {
 	cli                client.WaspClient
 	waspNs             string
 	nodeName           string
-	fsRoot             string
 }
 
 func Execute() {
@@ -53,7 +52,6 @@ func Execute() {
 
 	var app = WaspApp{}
 	app.nodeName = os.Getenv("NODE_NAME")
-	app.fsRoot = os.Getenv("FSROOT")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -72,10 +70,8 @@ func Execute() {
 
 	log.Log.Infof("nodeName: %v "+
 		"ns: %v "+
-		"fsRoot: %v",
 		app.nodeName,
 		app.waspNs,
-		app.fsRoot,
 	)
 
 	stop := ctx.Done()
