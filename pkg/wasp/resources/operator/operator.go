@@ -93,10 +93,6 @@ func createDaemonSetEnvVar(verbosity string) []corev1.EnvVar {
 			Value: verbosity,
 		},
 		{
-			Name:  "FSROOT",
-			Value: "/host",
-		},
-		{
 			Name: "NODE_NAME",
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
