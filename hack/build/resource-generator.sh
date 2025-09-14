@@ -44,10 +44,6 @@ function generateResourceManifest() {
             -verbosity="${VERBOSITY}" \
             -pull-policy="${PULL_POLICY}" \
             -namespace="${WASP_NAMESPACE}" \
-            -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
-            -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
-            -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
-            -swap-utilization-threshold-factor="${SWAP_UTILIZATION_THRESHOLD_FACTOR}" \
             -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}"
     ) 1>>"${targetDir}/"$manifestName
     (
@@ -61,10 +57,6 @@ function generateResourceManifest() {
             -verbosity="${VERBOSITY}" \
             -pull-policy="{{ pull_policy }}" \
             -namespace="{{ wasp_namespace }}" \
-            -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
-            -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
-            -average-window-size-seconds="{{ average_window_size_seconds }}" \
-            -swap-utilization-threshold-factor="{{ swap_utilization_threshold_factor }}" \
             -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}"
     ) 1>>"${targetDir}/"$manifestNamej2
 
@@ -124,10 +116,6 @@ function populateResourceManifest() {
             -pull-policy="${PULL_POLICY}" \
             -cr-name="${CR_NAME}" \
             -namespace="${WASP_NAMESPACE}" \
-            -max-average-swapin-pages-per-second="${MAX_AVERAGE_SWAPIN_PAGES_PER_SECOND}" \
-            -max-average-swapout-pages-per-second="${MAX_AVERAGE_SWAPOUT_PAGES_PER_SECOND}" \
-            -average-window-size-seconds="${AVERAGE_WINDOW_SIZE_SECONDS}" \
-            -swap-utilization-threshold-factor="${SWAP_UTILIZATION_THRESHOLD_FACTOR}" \
             -deploy-prometheus-rule="${DEPLOY_PROMETHEUS_RULE}" \
             -generated-manifests-path=${generatedManifests}
     ) 1>>"${targetDir}/"$outfile
@@ -143,10 +131,6 @@ function populateResourceManifest() {
             -verbosity="${VERBOSITY}" \
             -pull-policy="{{ pull_policy }}" \
             -namespace="{{ wasp_namespace }}" \
-            -max-average-swapin-pages-per-second="{{ max_average_swapin_pages_per_second }}" \
-            -max-average-swapout-pages-per-second="{{ max_average_swapout_pages_per_second }}" \
-            -average-window-size-seconds="{{ average_window_size_seconds }}" \
-            -swap-utilization-threshold-factor="{{ swap_utilization_threshold_factor }}" \
             -generated-manifests-path=${generatedManifests}
     ) 1>>"${tmplTargetDir}/"$outfile".j2"
 

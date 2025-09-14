@@ -46,21 +46,17 @@ type templateData struct {
 }
 
 var (
-	dockerRepo                      = flag.String("docker-repo", "", "")
-	dockertag                       = flag.String("docker-tag", "", "")
-	operatorVersion                 = flag.String("operator-version", "", "")
-	genManifestsPath                = flag.String("generated-manifests-path", "", "")
-	deployClusterResources          = flag.String("deploy-cluster-resources", "", "")
-	deployPrometheusRule            = flag.String("deploy-prometheus-rule", "", "")
-	operatorImage                   = flag.String("operator-image", "", "")
-	verbosity                       = flag.String("verbosity", "1", "")
-	pullPolicy                      = flag.String("pull-policy", "", "")
-	crName                          = flag.String("cr-name", "", "")
-	namespace                       = flag.String("namespace", "", "")
-	maxAverageSwapInPagesPerSecond  = flag.String("max-average-swapin-pages-per-second", "", "")
-	maxAverageSwapOutPagesPerSecond = flag.String("max-average-swapout-pages-per-second", "", "")
-	averageWindowSizeSeconds        = flag.String("average-window-size-seconds", "", "")
-	swapUtilizationThresholdFactor  = flag.String("swap-utilization-threshold-factor", "", "")
+	dockerRepo             = flag.String("docker-repo", "", "")
+	dockertag              = flag.String("docker-tag", "", "")
+	operatorVersion        = flag.String("operator-version", "", "")
+	genManifestsPath       = flag.String("generated-manifests-path", "", "")
+	deployClusterResources = flag.String("deploy-cluster-resources", "", "")
+	deployPrometheusRule   = flag.String("deploy-prometheus-rule", "", "")
+	operatorImage          = flag.String("operator-image", "", "")
+	verbosity              = flag.String("verbosity", "1", "")
+	pullPolicy             = flag.String("pull-policy", "", "")
+	crName                 = flag.String("cr-name", "", "")
+	namespace              = flag.String("namespace", "", "")
 )
 
 func main() {
@@ -165,16 +161,12 @@ func generateFromCode(resourceType, resourceGroup string) {
 func getOperatorResources(resourceGroup string) ([]client.Object, error) {
 	args := &wasp.FactoryArgs{
 		NamespacedArgs: args2.FactoryArgs{
-			Verbosity:                       *verbosity,
-			OperatorVersion:                 *operatorVersion,
-			DeployClusterResources:          *deployClusterResources,
-			DeployPrometheusRule:            *deployPrometheusRule,
-			PullPolicy:                      *pullPolicy,
-			Namespace:                       *namespace,
-			MaxAverageSwapInPagesPerSecond:  *maxAverageSwapInPagesPerSecond,
-			MaxAverageSwapOutPagesPerSecond: *maxAverageSwapOutPagesPerSecond,
-			AverageWindowSizeSeconds:        *averageWindowSizeSeconds,
-			SwapUtilizationThresholdFactor:  *swapUtilizationThresholdFactor,
+			Verbosity:              *verbosity,
+			OperatorVersion:        *operatorVersion,
+			DeployClusterResources: *deployClusterResources,
+			DeployPrometheusRule:   *deployPrometheusRule,
+			PullPolicy:             *pullPolicy,
+			Namespace:              *namespace,
 		},
 		Image: *operatorImage,
 	}

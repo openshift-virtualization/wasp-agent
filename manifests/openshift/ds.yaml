@@ -20,14 +20,6 @@ spec:
     spec:
       containers:
         - env:
-            - name: SWAP_UTILIZATION_THRESHOLD_FACTOR
-              value: "0.8"
-            - name: MAX_AVERAGE_SWAP_IN_PAGES_PER_SECOND
-              value: "1000"
-            - name: MAX_AVERAGE_SWAP_OUT_PAGES_PER_SECOND
-              value: "1000"
-            - name: AVERAGE_WINDOW_SIZE_SECONDS
-              value: "30"
             - name: VERBOSITY
               value: "1"
             - name: FSROOT
