@@ -13,7 +13,7 @@
 #limitations under the License.
 WASP_IMAGE_NAME=${WASP_IMAGE_NAME:-wasp}
 
-DOCKER_PREFIX=${DOCKER_PREFIX:-"quay.io/bmordeha"}
+DOCKER_PREFIX=${DOCKER_PREFIX:-"registry:5000/openshift-virtualization"}
 DOCKER_TAG=${DOCKER_TAG:-latest}
 VERBOSITY=${VERBOSITY:-1}
 PULL_POLICY=${PULL_POLICY:-Always}

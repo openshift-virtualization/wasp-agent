@@ -44,5 +44,6 @@ VENDOR_DIR=${WASP_DIR}/vendor
 ARCHITECTURE="${BUILD_ARCH:-$(uname -m)}"
 HOST_ARCHITECTURE="$(uname -m)"
 WASP_CRI="$(determine_wasp_bin)"
+KUBEVIRT_RELEASE=${KUBEVIRT_RELEASE:-"latest_nightly"}
 
 
