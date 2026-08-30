@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Build Image
       id: build-image
-      uses: redhat-actions/buildah-build@v2
+      uses: redhat-actions/buildah-build@v3
       with:
         image: wasp-agent
         tags: latest ${{ github.sha }}
@@ -26,7 +26,7 @@ jobs:
     - name: Push To quay.io
       if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'release' }}
       id: push-to-quay
-      uses: redhat-actions/push-to-registry@v2
+      uses: redhat-actions/push-to-registry@v3
       with:
         image: ${{ steps.build-image.outputs.image }}
         tags: ${{ steps.build-image.outputs.tags }}
